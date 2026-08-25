@@ -1,0 +1,70 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+@import "tailwindcss";
+
+/* ─── Design tokens ──────────────────────────────────────────────────────── */
+@theme {
+  /* Fonts */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-display: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+
+  /* Canvas & surface */
+  --color-canvas: #f4f7f5;
+  --color-surface: #ffffff;
+  --color-border: #dde8e2;
+  --color-border-subtle: #edf2ef;
+
+  /* Brand */
+  --color-primary: #176d55;
+  --color-primary-hover: #125744;
+  --color-primary-subtle: #e5f2ec;
+  --color-accent: #1b9675;
+  --color-mark: #173e35;
+
+  /* Text */
+  --color-ink: #173e35;
+  --color-ink-secondary: #52645b;
+  --color-ink-muted: #809087;
+
+  /* Statuses */
+  --color-pending: #9a6d16;
+  --color-pending-surface: #fff4dd;
+  --color-pending-border: #edd99a;
+
+  --color-approved: #177257;
+  --color-approved-surface: #e3f7ee;
+  --color-approved-border: #9ae0c0;
+
+  --color-rejected: #b6504c;
+  --color-rejected-surface: #ffebea;
+  --color-rejected-border: #f0b5b3;
+
+  /* Error */
+  --color-error: #b34640;
+  --color-error-surface: #fdeaea;
+}
+
+/* ─── Global resets ──────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button, input, select, textarea { font: inherit; }
+button { cursor: pointer; }
+a { color: inherit; text-decoration: none; }
+
+/* ─── Typography helpers (used via className) ────────────────────────────── */
+.font-display { font-family: var(--font-display); }
+
+/* ─── Scrollbar ──────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-ink-muted); }
