@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.db.database import engine, Base
 import app.db.base  # Ensures all ORM models are registered with Base metadata
-from app.api.routes import auth, receipts
+from app.api.routes import auth, receipts, admin
 
 
 @asynccontextmanager
@@ -18,7 +18,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Receipt Processing API",
-    description="Backend API for Clearclaim Receipt Processing Dashboard with JWT auth, RBAC, and receipt management.",
+    description="Backend API for Clearclaim Receipt Processing Dashboard with JWT auth, RBAC, receipt management, and admin review workflow.",
     version="1.0.0",
     lifespan=lifespan,
     docs_url="/docs",
@@ -37,6 +37,7 @@ app.add_middleware(
 # Register API Routers
 app.include_router(auth.router)
 app.include_router(receipts.router)
+app.include_router(admin.router)
 
 
 @app.get("/", tags=["Health"])
