@@ -1,11 +1,14 @@
+from datetime import datetime, timezone
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query, HTTPException, status
+from fastapi.responses import StreamingResponse, Response
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_db, get_current_admin
 from app.models.user import User
 from app.schemas.receipt import ReceiptResponse, ReceiptReviewRequest
 from app.services.admin_service import admin_service
+from app.services.export_service import export_service
 
 router = APIRouter(prefix="/api/admin/receipts", tags=["Admin"])
 
@@ -41,6 +44,74 @@ def list_receipts(
         to_date=toDate
     )
     return [admin_service.to_receipt_response(r) for r in receipts]
+
+
+@router.get(
+    "/export/csv",
+    summary="Export approved receipts as CSV",
+    description="Generates and streams a downloadable CSV file containing only APPROVED receipts."
+)
+def export_approved_csv(
+    userId: Optional[str] = Query(None, description="Filter by user ID"),
+    category: Optional[str] = Query(None, description="Filter by category"),
+    fromDate: Optional[str] = Query(None, description="Filter from receipt date"),
+    toDate: Optional[str] = Query(None, description="Filter to receipt date"),
+    admin_user: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    """
+    Export approved receipts to CSV.
+    Equivalent to Spring Boot CsvExportController.
+    """
+    csv_buffer = export_service.generate_csv(
+        db=db,
+        user_id=userId,
+        category=category,
+        from_date=fromDate,
+        to_date=toDate
+    )
+    today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    filename = f"approved_receipts_{today_str}.csv"
+
+    return Response(
+        content=csv_buffer.getvalue(),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
+
+
+@router.get(
+    "/export/excel",
+    summary="Export approved receipts as Excel (.xlsx)",
+    description="Generates and streams a styled downloadable Excel file containing only APPROVED receipts."
+)
+def export_approved_excel(
+    userId: Optional[str] = Query(None, description="Filter by user ID"),
+    category: Optional[str] = Query(None, description="Filter by category"),
+    fromDate: Optional[str] = Query(None, description="Filter from receipt date"),
+    toDate: Optional[str] = Query(None, description="Filter to receipt date"),
+    admin_user: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    """
+    Export approved receipts to Excel.
+    Equivalent to Spring Boot ExcelExportController.
+    """
+    excel_buffer = export_service.generate_excel(
+        db=db,
+        user_id=userId,
+        category=category,
+        from_date=fromDate,
+        to_date=toDate
+    )
+    today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    filename = f"approved_receipts_{today_str}.xlsx"
+
+    return StreamingResponse(
+        excel_buffer,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
 
 
 @router.get(
