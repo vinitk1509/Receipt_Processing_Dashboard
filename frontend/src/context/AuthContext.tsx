@@ -1,11 +1,6 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react'
 import type { User } from '../types/index'
-import {
-  MOCK_USER_ALEX,
-  MOCK_ADMIN_PRIYA,
-  MOCK_USER_RAJ,
-  DEMO_CREDENTIALS,
-} from '../data/mockData'
+import { authApi } from '../api/authApi'
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -16,9 +11,7 @@ interface AuthState {
 
 interface AuthContextValue extends AuthState {
   isAuthenticated: boolean
-  /** Simulates login — swap body with real authApi.login() call */
   login: (email: string, password: string) => Promise<void>
-  /** Simulates registration — swap body with real authApi.register() call */
   register: (fullName: string, email: string, password: string) => Promise<void>
   logout: () => void
 }
@@ -57,59 +50,46 @@ function clearStorage() {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>(loadFromStorage)
 
+  // Verify and sync current user on initial mount if token exists
+  useEffect(() => {
+    if (state.token && !state.user) {
+      authApi
+        .me()
+        .then((res) => {
+          setState((prev) => ({ ...prev, user: res.data }))
+          localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(res.data))
+        })
+        .catch(() => {
+          clearStorage()
+          setState({ user: null, token: null })
+        })
+    }
+  }, [state.token, state.user])
+
   /**
-   * Login — swap this body with a real authApi.login() call when the backend is ready.
+   * Real Login API call
    */
   const login = useCallback(async (email: string, password: string) => {
-    // Simulate network delay
-    await new Promise((r) => setTimeout(r, 600))
-
-    let user: User
-    if (email === DEMO_CREDENTIALS.admin.email) {
-      user = MOCK_ADMIN_PRIYA
-    } else if (email === DEMO_CREDENTIALS.user.email) {
-      user = MOCK_USER_ALEX
-    } else if (email.includes('raj')) {
-      user = MOCK_USER_RAJ
-    } else if (email.includes('@')) {
-      // Any other valid email logs in as the demo user
-      user = { ...MOCK_USER_ALEX, email }
-    } else {
-      throw new Error('Invalid email or password.')
-    }
-
-    if (password.length < 6) throw new Error('Invalid email or password.')
-
-    const token = 'demo-jwt-token'
-    saveToStorage(user, token)
-    setState({ user, token })
+    const res = await authApi.login({ email, password })
+    const { access_token, user } = res.data
+    saveToStorage(user, access_token)
+    setState({ user, token: access_token })
   }, [])
 
   /**
-   * Register — swap this body with a real authApi.register() call when the backend is ready.
-   * New users always receive the USER role.
+   * Real Registration API call
    */
   const register = useCallback(
-    async (fullName: string, email: string, _password: string) => {
-      await new Promise((r) => setTimeout(r, 700))
-
-      const initials = fullName
-        .split(' ')
-        .slice(0, 2)
-        .map((n) => n[0])
-        .join('')
-        .toUpperCase()
-
-      const user: User = {
-        id: `u-${Date.now()}`,
+    async (fullName: string, email: string, password: string) => {
+      const res = await authApi.register({
         fullName,
         email,
-        role: 'USER',
-        initials,
-      }
-      const token = 'demo-jwt-token'
-      saveToStorage(user, token)
-      setState({ user, token })
+        password,
+        confirmPassword: password,
+      })
+      const { access_token, user } = res.data
+      saveToStorage(user, access_token)
+      setState({ user, token: access_token })
     },
     []
   )
@@ -123,7 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider
       value={{
         ...state,
-        isAuthenticated: !!state.user,
+        isAuthenticated: !!state.user && !!state.token,
         login,
         register,
         logout,

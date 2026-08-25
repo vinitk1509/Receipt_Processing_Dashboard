@@ -1,10 +1,13 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, Navigate, Link } from 'react-router-dom'
 import { ChevronLeft, FileText, Download, ExternalLink, AlertCircle } from 'lucide-react'
-import { MOCK_RECEIPTS } from '../../data/mockData'
+import { adminApi } from '../../api/adminApi'
+import { downloadFile } from '../../api/axios'
+import type { Receipt } from '../../types/index'
 import Page from '../../components/layout/Page'
 import StatusBadge from '../../components/ui/StatusBadge'
 import ConfirmDialog from '../../components/ui/ConfirmDialog'
+import { TableSkeleton } from '../../components/ui/Skeleton'
 import { useToast } from '../../components/ui/Toast'
 import { formatCurrency, formatDate, formatDateTime } from '../../lib/utils'
 
@@ -21,48 +24,93 @@ export default function ReceiptReviewDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { success, error: toastError } = useToast()
 
-  // Find the receipt (in production this would be fetched from the API)
-  const receipt = MOCK_RECEIPTS.find((r) => r.id === id)
+  const [receipt, setReceipt] = useState<Receipt | null>(null)
+  const [loadingReceipt, setLoadingReceipt] = useState(true)
+  const [notFound, setNotFound] = useState(false)
 
-  const [comment, setComment] = useState(receipt?.reviewComment ?? '')
+  const [comment, setComment] = useState('')
   const [showApproveDialog, setShowApproveDialog] = useState(false)
   const [loading, setLoading] = useState(false)
   const [commentError, setCommentError] = useState('')
 
-  if (!receipt) return <Navigate to="/admin/receipts" replace />
+  useEffect(() => {
+    if (!id) return
+    let isMounted = true
+    adminApi
+      .get(id)
+      .then((res) => {
+        if (isMounted) {
+          setReceipt(res.data)
+          setComment(res.data.reviewComment ?? '')
+          setLoadingReceipt(false)
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load receipt:', err)
+        if (isMounted) {
+          setNotFound(true)
+          setLoadingReceipt(false)
+        }
+      })
+    return () => {
+      isMounted = false
+    }
+  }, [id])
 
-  // After this point receipt is guaranteed non-null — used in callbacks below
+  if (notFound) return <Navigate to="/admin/receipts" replace />
+
+  if (loadingReceipt || !receipt) {
+    return (
+      <Page title="Review Receipt" subtitle="Loading receipt details…">
+        <div className="p-6 bg-surface border border-border rounded-xl">
+          <TableSkeleton rows={4} />
+        </div>
+      </Page>
+    )
+  }
+
   const safeReceipt = receipt
-
-  const isReviewed = !!receipt.reviewedAt
+  const isReviewed = receipt.status !== 'PENDING'
   const isPdf = receipt.fileName?.toLowerCase().endsWith('.pdf')
 
   async function handleApprove() {
     setLoading(true)
     try {
-      // TODO: replace with → await adminApi.approve(safeReceipt.id, { reviewComment: comment })
-      await new Promise((r) => setTimeout(r, 800))
+      const res = await adminApi.approve(safeReceipt.id, { reviewComment: comment })
+      setReceipt(res.data)
       setShowApproveDialog(false)
       success(`Receipt ${safeReceipt.id} has been approved.`)
-    } catch {
-      toastError('Approval failed. Please try again.')
+    } catch (err: any) {
+      const msg = err?.response?.data?.detail || 'Approval failed. Please try again.'
+      toastError(msg)
     } finally {
       setLoading(false)
     }
   }
 
-  function handleReject() {
+  async function handleReject() {
     setCommentError('')
     if (!comment.trim()) {
       setCommentError('A review comment is required when rejecting a receipt.')
       return
     }
     setLoading(true)
-    // TODO: replace with → await adminApi.reject(safeReceipt.id, { reviewComment: comment })
-    setTimeout(() => {
-      setLoading(false)
+    try {
+      const res = await adminApi.reject(safeReceipt.id, { reviewComment: comment })
+      setReceipt(res.data)
       success(`Receipt ${safeReceipt.id} has been rejected.`)
-    }, 700)
+    } catch (err: any) {
+      const msg = err?.response?.data?.detail || 'Rejection failed. Please try again.'
+      toastError(msg)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleDownload = () => {
+    if (id) {
+      downloadFile(`/api/receipts/${id}/file`, safeReceipt.fileName)
+    }
   }
 
   return (
@@ -84,8 +132,8 @@ export default function ReceiptReviewDetailPage() {
         <div className="flex flex-wrap items-center gap-3 mb-6">
           <StatusBadge status={receipt.status} />
           <span className="text-sm text-ink-muted">
-            {isReviewed
-              ? `Reviewed ${formatDate(receipt.reviewedAt!)}`
+            {isReviewed && receipt.reviewedAt
+              ? `Reviewed ${formatDate(receipt.reviewedAt)}`
               : 'Awaiting review'}
           </span>
         </div>
@@ -132,11 +180,17 @@ export default function ReceiptReviewDetailPage() {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <button className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border text-sm font-semibold text-ink-secondary hover:bg-canvas transition-colors">
+                <button
+                  onClick={handleDownload}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border text-sm font-semibold text-ink-secondary hover:bg-canvas transition-colors"
+                >
                   <ExternalLink className="size-4" aria-hidden />
                   Preview document
                 </button>
-                <button className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border text-sm font-semibold text-ink-secondary hover:bg-canvas transition-colors">
+                <button
+                  onClick={handleDownload}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border text-sm font-semibold text-ink-secondary hover:bg-canvas transition-colors"
+                >
                   <Download className="size-4" aria-hidden />
                   Download
                 </button>
@@ -178,30 +232,33 @@ export default function ReceiptReviewDetailPage() {
 
               {isReviewed ? (
                 <div className="rounded-lg bg-canvas border border-border-subtle px-4 py-3 text-sm text-ink-secondary">
-                  This receipt has already been reviewed and cannot be changed.
+                  <p className="font-semibold text-ink mb-1">
+                    This receipt has been {receipt.status.toLowerCase()}.
+                  </p>
+                  {receipt.reviewedBy && (
+                    <p className="text-xs text-ink-muted">
+                      Reviewed by {receipt.reviewedBy.fullName}
+                      {receipt.reviewedAt && ` on ${formatDate(receipt.reviewedAt)}`}
+                    </p>
+                  )}
                 </div>
               ) : (
-                <div className="flex flex-col gap-2.5">
+                <div className="flex items-center gap-3 pt-2">
                   <button
-                    onClick={() => setShowApproveDialog(true)}
+                    type="button"
                     disabled={loading}
-                    className="w-full py-2.5 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary-hover transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    onClick={() => setShowApproveDialog(true)}
+                    className="flex-1 px-4 py-2.5 rounded-lg bg-approved text-white text-sm font-semibold hover:bg-approved/90 disabled:opacity-50 transition-all shadow-sm"
                   >
-                    {loading ? (
-                      <>
-                        <span className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" aria-hidden />
-                        Processing…
-                      </>
-                    ) : (
-                      'Approve receipt'
-                    )}
+                    Approve
                   </button>
                   <button
-                    onClick={handleReject}
+                    type="button"
                     disabled={loading}
-                    className="w-full py-2.5 rounded-lg border border-rejected-border bg-rejected-surface text-rejected text-sm font-semibold hover:bg-rejected/10 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                    onClick={handleReject}
+                    className="flex-1 px-4 py-2.5 rounded-lg bg-rejected text-white text-sm font-semibold hover:bg-rejected/90 disabled:opacity-50 transition-all shadow-sm"
                   >
-                    Reject receipt
+                    Reject
                   </button>
                 </div>
               )}
@@ -210,16 +267,17 @@ export default function ReceiptReviewDetailPage() {
         </div>
       </Page>
 
-      {/* Approve confirmation dialog */}
       <ConfirmDialog
         open={showApproveDialog}
-        title="Approve this receipt?"
-        description="The receipt will be marked as approved and the submitter will be notified. This action cannot be undone."
-        confirmLabel="Approve receipt"
-        cancelLabel="Cancel"
-        loading={loading}
+        onClose={() => setShowApproveDialog(false)}
         onConfirm={handleApprove}
-        onCancel={() => setShowApproveDialog(false)}
+        title="Approve this receipt?"
+        description={`You are about to approve receipt ${safeReceipt.id} for ${formatCurrency(
+          safeReceipt.amount
+        )} submitted by ${safeReceipt.user.fullName}. This action marks the expense as reimbursable.`}
+        confirmLabel="Approve Receipt"
+        variant="approve"
+        loading={loading}
       />
     </>
   )

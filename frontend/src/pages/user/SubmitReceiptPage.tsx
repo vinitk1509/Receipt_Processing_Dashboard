@@ -1,7 +1,8 @@
 import { useState, useCallback, type FormEvent, type DragEvent } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { UploadCloud, FileText, X, AlertCircle } from 'lucide-react'
-import { RECEIPT_CATEGORIES } from '../../types/index'
+import { receiptApi } from '../../api/receiptApi'
+import { RECEIPT_CATEGORIES, type ReceiptCategory } from '../../types/index'
 import Page from '../../components/layout/Page'
 import { useToast } from '../../components/ui/Toast'
 
@@ -65,13 +66,20 @@ export default function SubmitReceiptPage() {
 
     setLoading(true)
     try {
-      // TODO: replace with real API call → receiptApi.create({ title, amount: Number(amount), receiptDate, category, notes, file })
-      await new Promise((r) => setTimeout(r, 800))
+      await receiptApi.create({
+        title: title.trim(),
+        amount: Number(amount),
+        receiptDate,
+        category: category as ReceiptCategory,
+        notes: notes.trim(),
+        file,
+      })
 
       success('Receipt submitted successfully. It will be reviewed by an admin.')
       navigate('/receipts')
-    } catch {
-      toastError('Submission failed. Please try again.')
+    } catch (err: any) {
+      const msg = err?.response?.data?.detail || 'Submission failed. Please try again.'
+      toastError(msg)
     } finally {
       setLoading(false)
     }

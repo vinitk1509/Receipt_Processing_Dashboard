@@ -1,9 +1,12 @@
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Plus, TrendingUp } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
-import { MOCK_RECEIPTS } from '../../data/mockData'
+import { receiptApi } from '../../api/receiptApi'
+import type { Receipt } from '../../types/index'
 import Page from '../../components/layout/Page'
 import StatusBadge from '../../components/ui/StatusBadge'
+import { TableSkeleton } from '../../components/ui/Skeleton'
 import { formatCurrency, formatDate, getGreeting } from '../../lib/utils'
 
 function MetricCard({
@@ -26,8 +29,28 @@ function MetricCard({
 
 export default function DashboardPage() {
   const { user } = useAuth()
+  const [myReceipts, setMyReceipts] = useState<Receipt[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const myReceipts = MOCK_RECEIPTS.filter((r) => r.user.id === user?.id)
+  useEffect(() => {
+    let isMounted = true
+    receiptApi
+      .listMine()
+      .then((res) => {
+        if (isMounted) {
+          setMyReceipts(res.data)
+          setLoading(false)
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to fetch user receipts:', err)
+        if (isMounted) setLoading(false)
+      })
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
   const pending = myReceipts.filter((r) => r.status === 'PENDING')
   const approved = myReceipts.filter((r) => r.status === 'APPROVED')
   const rejected = myReceipts.filter((r) => r.status === 'REJECTED')
@@ -51,13 +74,13 @@ export default function DashboardPage() {
     >
       {/* Metric cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-7">
-        <MetricCard label="Total receipts" value={String(myReceipts.length)} />
-        <MetricCard label="Pending" value={String(pending.length)} sub="Awaiting review" />
-        <MetricCard label="Approved" value={String(approved.length)} />
-        <MetricCard label="Rejected" value={String(rejected.length)} />
+        <MetricCard label="Total receipts" value={loading ? '…' : String(myReceipts.length)} />
+        <MetricCard label="Pending" value={loading ? '…' : String(pending.length)} sub="Awaiting review" />
+        <MetricCard label="Approved" value={loading ? '…' : String(approved.length)} />
+        <MetricCard label="Rejected" value={loading ? '…' : String(rejected.length)} />
         <MetricCard
           label="Approved amount"
-          value={formatCurrency(approvedTotal)}
+          value={loading ? '…' : formatCurrency(approvedTotal)}
           sub="Total reimbursable"
         />
       </div>
@@ -74,7 +97,11 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        {recent.length === 0 ? (
+        {loading ? (
+          <div className="p-6">
+            <TableSkeleton rows={4} />
+          </div>
+        ) : recent.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center px-4">
             <TrendingUp className="size-10 text-border mb-3" aria-hidden />
             <h3 className="font-semibold text-ink mb-1">No receipts yet</h3>

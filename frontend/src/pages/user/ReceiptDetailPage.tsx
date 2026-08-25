@@ -1,8 +1,12 @@
+import { useState, useEffect } from 'react'
 import { useParams, Link, Navigate } from 'react-router-dom'
 import { FileText, Download, ExternalLink, ChevronLeft } from 'lucide-react'
-import { MOCK_RECEIPTS } from '../../data/mockData'
+import { receiptApi } from '../../api/receiptApi'
+import { downloadFile } from '../../api/axios'
+import type { Receipt } from '../../types/index'
 import Page from '../../components/layout/Page'
 import StatusBadge from '../../components/ui/StatusBadge'
+import { TableSkeleton } from '../../components/ui/Skeleton'
 import { formatCurrency, formatDate, formatDateTime } from '../../lib/utils'
 
 function Field({ label, value }: { label: string; value: string }) {
@@ -16,11 +20,61 @@ function Field({ label, value }: { label: string; value: string }) {
 
 export default function ReceiptDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const receipt = MOCK_RECEIPTS.find((r) => r.id === id)
+  const [receipt, setReceipt] = useState<Receipt | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [notFound, setNotFound] = useState(false)
 
-  if (!receipt) return <Navigate to="/receipts" replace />
+  useEffect(() => {
+    if (!id) return
+    let isMounted = true
+    receiptApi
+      .get(id)
+      .then((res) => {
+        if (isMounted) {
+          setReceipt(res.data)
+          setLoading(false)
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load receipt detail:', err)
+        if (isMounted) {
+          setNotFound(true)
+          setLoading(false)
+        }
+      })
+    return () => {
+      isMounted = false
+    }
+  }, [id])
+
+  if (notFound) return <Navigate to="/receipts" replace />
+
+  if (loading || !receipt) {
+    return (
+      <Page title="Receipt Details" subtitle="Loading receipt information…">
+        <div className="p-6 bg-surface border border-border rounded-xl">
+          <TableSkeleton rows={3} />
+        </div>
+      </Page>
+    )
+  }
 
   const isPdf = receipt.fileName?.toLowerCase().endsWith('.pdf')
+
+  const handleDownload = () => {
+    if (id) {
+      downloadFile(`/api/receipts/${id}/file`, receipt.fileName)
+    }
+  }
+
+  const handleViewDocument = () => {
+    if (id) {
+      const token = localStorage.getItem('clearclaim_token')
+      const fileUrl = `/api/receipts/${id}/file`
+      // Open in new tab with downloadFile or direct window preview
+      downloadFile(fileUrl, receipt.fileName)
+    }
+  }
 
   return (
     <Page
@@ -94,11 +148,17 @@ export default function ReceiptDetailPage() {
             </div>
 
             <div className="flex items-center gap-3">
-              <button className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border text-sm font-semibold text-ink-secondary hover:bg-canvas transition-colors">
+              <button
+                onClick={handleViewDocument}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border text-sm font-semibold text-ink-secondary hover:bg-canvas transition-colors"
+              >
                 <ExternalLink className="size-4" aria-hidden />
                 View document
               </button>
-              <button className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border text-sm font-semibold text-ink-secondary hover:bg-canvas transition-colors">
+              <button
+                onClick={handleDownload}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border text-sm font-semibold text-ink-secondary hover:bg-canvas transition-colors"
+              >
                 <Download className="size-4" aria-hidden />
                 Download
               </button>

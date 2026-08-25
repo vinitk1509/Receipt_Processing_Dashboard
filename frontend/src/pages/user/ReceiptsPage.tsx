@@ -1,10 +1,10 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Search, Filter, FileText, Plus, X } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
-import { MOCK_RECEIPTS } from '../../data/mockData'
+import { receiptApi } from '../../api/receiptApi'
 import { RECEIPT_CATEGORIES } from '../../types/index'
-import type { ReceiptStatus, ReceiptCategory } from '../../types/index'
+import type { Receipt, ReceiptStatus, ReceiptCategory } from '../../types/index'
 import Page from '../../components/layout/Page'
 import StatusBadge from '../../components/ui/StatusBadge'
 import { TableSkeleton } from '../../components/ui/Skeleton'
@@ -21,6 +21,8 @@ const STATUS_OPTIONS: { value: ReceiptStatus | 'ALL'; label: string }[] = [
 
 export default function ReceiptsPage() {
   const { user } = useAuth()
+  const [receipts, setReceipts] = useState<Receipt[]>([])
+  const [loading, setLoading] = useState(true)
 
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState<ReceiptStatus | 'ALL'>('ALL')
@@ -29,10 +31,28 @@ export default function ReceiptsPage() {
   const [toDate, setToDate] = useState('')
   const [sortDir, setSortDir] = useState<'desc' | 'asc'>('desc')
   const [page, setPage] = useState(1)
-  const [loading] = useState(false)
+
+  useEffect(() => {
+    let isMounted = true
+    receiptApi
+      .listMine()
+      .then((res) => {
+        if (isMounted) {
+          setReceipts(res.data)
+          setLoading(false)
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load receipts:', err)
+        if (isMounted) setLoading(false)
+      })
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   const filtered = useMemo(() => {
-    let rows = MOCK_RECEIPTS.filter((r) => r.user.id === user?.id)
+    let rows = [...receipts]
 
     if (query.trim()) {
       const q = query.toLowerCase()
@@ -54,7 +74,7 @@ export default function ReceiptsPage() {
         : a.submittedAt.localeCompare(b.submittedAt)
     )
     return rows
-  }, [user, query, status, category, fromDate, toDate, sortDir])
+  }, [receipts, query, status, category, fromDate, toDate, sortDir])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)

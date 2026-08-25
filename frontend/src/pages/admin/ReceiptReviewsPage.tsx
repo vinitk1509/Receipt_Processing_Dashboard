@@ -1,9 +1,9 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Search, Filter, FileText, X } from 'lucide-react'
-import { MOCK_RECEIPTS, MOCK_USERS } from '../../data/mockData'
+import { adminApi } from '../../api/adminApi'
 import { RECEIPT_CATEGORIES } from '../../types/index'
-import type { ReceiptStatus, ReceiptCategory } from '../../types/index'
+import type { Receipt, User, ReceiptStatus, ReceiptCategory } from '../../types/index'
 import Page from '../../components/layout/Page'
 import StatusBadge from '../../components/ui/StatusBadge'
 import { TableSkeleton } from '../../components/ui/Skeleton'
@@ -20,6 +20,8 @@ const STATUS_OPTIONS: { value: ReceiptStatus | 'ALL'; label: string }[] = [
 
 export default function ReceiptReviewsPage() {
   const navigate = useNavigate()
+  const [receipts, setReceipts] = useState<Receipt[]>([])
+  const [loading, setLoading] = useState(true)
 
   const [query, setQuery] = useState('')
   const [userId, setUserId] = useState('ALL')
@@ -28,10 +30,39 @@ export default function ReceiptReviewsPage() {
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
   const [page, setPage] = useState(1)
-  const [loading] = useState(false)
+
+  useEffect(() => {
+    let isMounted = true
+    adminApi
+      .list()
+      .then((res) => {
+        if (isMounted) {
+          setReceipts(res.data)
+          setLoading(false)
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load receipt reviews:', err)
+        if (isMounted) setLoading(false)
+      })
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  // Extract unique users from receipts
+  const availableUsers = useMemo(() => {
+    const map = new Map<string, User>()
+    for (const r of receipts) {
+      if (r.user && !map.has(r.user.id)) {
+        map.set(r.user.id, r.user)
+      }
+    }
+    return Array.from(map.values())
+  }, [receipts])
 
   const filtered = useMemo(() => {
-    let rows = [...MOCK_RECEIPTS]
+    let rows = [...receipts]
 
     if (query.trim()) {
       const q = query.toLowerCase()
@@ -51,7 +82,7 @@ export default function ReceiptReviewsPage() {
 
     rows.sort((a, b) => b.submittedAt.localeCompare(a.submittedAt))
     return rows
-  }, [query, userId, status, category, fromDate, toDate])
+  }, [receipts, query, userId, status, category, fromDate, toDate])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
@@ -100,7 +131,7 @@ export default function ReceiptReviewsPage() {
           aria-label="Filter by user"
         >
           <option value="ALL">All users</option>
-          {MOCK_USERS.filter((u) => u.role === 'USER').map((u) => (
+          {availableUsers.map((u) => (
             <option key={u.id} value={u.id}>{u.fullName}</option>
           ))}
         </select>
@@ -160,7 +191,7 @@ export default function ReceiptReviewsPage() {
         )}
       </div>
 
-      {/* Table */}
+      {/* Table panel */}
       <div className="bg-surface border border-border rounded-xl overflow-hidden">
         <div className="flex items-center justify-between px-6 py-3 border-b border-border-subtle bg-canvas/50">
           <p className="text-xs text-ink-muted">
@@ -173,50 +204,46 @@ export default function ReceiptReviewsPage() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-sm min-w-[900px]">
+          <table className="w-full text-sm min-w-[850px]">
             <thead>
               <tr className="border-b border-border-subtle bg-canvas">
                 {[
-                  { label: 'Receipt ID', cls: 'pl-6' },
-                  { label: 'Submitted by', cls: '' },
-                  { label: 'Receipt', cls: '' },
-                  { label: 'Category', cls: '' },
-                  { label: 'Receipt date', cls: '' },
-                  { label: 'Submitted', cls: '' },
-                  { label: 'Amount', cls: 'text-right' },
-                  { label: 'Status', cls: '' },
-                  { label: 'Action', cls: '' },
-                ].map(({ label, cls }) => (
+                  'Receipt ID',
+                  'Submitted by',
+                  'Receipt',
+                  'Category',
+                  'Receipt date',
+                  'Amount',
+                  'Status',
+                  'Action',
+                ].map((h) => (
                   <th
-                    key={label}
-                    className={`px-4 py-3 text-xs font-semibold text-ink-muted uppercase tracking-wide text-left ${cls}`}
+                    key={h}
+                    className={`px-4 py-3 text-xs font-semibold text-ink-muted uppercase tracking-wide text-left ${
+                      h === 'Amount' ? 'text-right' : ''
+                    } ${h === 'Receipt ID' ? 'pl-6' : ''}`}
                   >
-                    {label}
+                    {h}
                   </th>
                 ))}
               </tr>
             </thead>
 
             {loading ? (
-              <TableSkeleton rows={10} />
+              <TableSkeleton />
             ) : (
               <tbody>
                 {paged.map((r) => (
                   <tr
                     key={r.id}
-                    onClick={() => navigate(`/admin/receipts/${r.id}`)}
-                    className="border-b border-border-subtle last:border-0 hover:bg-canvas/60 transition-colors cursor-pointer"
+                    className="border-b border-border-subtle last:border-0 hover:bg-canvas/60 transition-colors"
                   >
                     <td className="pl-6 pr-4 py-3.5">
                       <span className="text-xs font-semibold text-ink-muted font-mono">{r.id}</span>
                     </td>
                     <td className="px-4 py-3.5">
-                      <div className="flex items-center gap-2">
-                        <div className="size-7 rounded-full bg-primary-subtle flex items-center justify-center shrink-0">
-                          <span className="text-xs font-bold text-primary">{r.user.initials}</span>
-                        </div>
-                        <span className="text-ink-secondary text-sm">{r.user.fullName}</span>
-                      </div>
+                      <p className="font-semibold text-ink">{r.user.fullName}</p>
+                      <p className="text-xs text-ink-muted">{r.user.email}</p>
                     </td>
                     <td className="px-4 py-3.5">
                       <p className="font-semibold text-ink truncate max-w-[160px]">{r.title}</p>
@@ -224,9 +251,6 @@ export default function ReceiptReviewsPage() {
                     <td className="px-4 py-3.5 text-ink-secondary">{r.category}</td>
                     <td className="px-4 py-3.5 text-ink-secondary whitespace-nowrap">
                       {formatDate(r.receiptDate)}
-                    </td>
-                    <td className="px-4 py-3.5 text-ink-secondary whitespace-nowrap">
-                      {formatDate(r.submittedAt)}
                     </td>
                     <td className="px-4 py-3.5 text-right font-semibold text-ink whitespace-nowrap">
                       {formatCurrency(r.amount)}
@@ -237,7 +261,6 @@ export default function ReceiptReviewsPage() {
                     <td className="px-4 py-3.5">
                       <Link
                         to={`/admin/receipts/${r.id}`}
-                        onClick={(e) => e.stopPropagation()}
                         className="text-sm font-semibold text-primary hover:underline"
                       >
                         {r.status === 'PENDING' ? 'Review' : 'View'}
@@ -250,22 +273,31 @@ export default function ReceiptReviewsPage() {
           </table>
         </div>
 
+        {/* Empty state */}
         {!loading && paged.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 text-center px-4">
             <FileText className="size-10 text-border mb-3" aria-hidden />
-            <h3 className="font-semibold text-ink mb-1">No receipts found</h3>
-            <p className="text-sm text-ink-muted mb-4">Try adjusting or clearing your filters.</p>
-            {hasFilters && (
-              <button
-                onClick={clearFilters}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold border border-border hover:bg-canvas transition-colors"
-              >
-                Clear filters
-              </button>
+            {hasFilters ? (
+              <>
+                <h3 className="font-semibold text-ink mb-1">No receipts match your filters</h3>
+                <p className="text-sm text-ink-muted mb-4">Try adjusting or clearing your filters.</p>
+                <button
+                  onClick={clearFilters}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold border border-border hover:bg-canvas transition-colors"
+                >
+                  Clear filters
+                </button>
+              </>
+            ) : (
+              <>
+                <h3 className="font-semibold text-ink mb-1">No receipts submitted yet</h3>
+                <p className="text-sm text-ink-muted">Receipts submitted by users will appear here for review.</p>
+              </>
             )}
           </div>
         )}
 
+        {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-6 py-3.5 border-t border-border-subtle">
             <p className="text-xs text-ink-muted">

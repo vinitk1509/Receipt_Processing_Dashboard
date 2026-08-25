@@ -1,30 +1,65 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Download, FileSpreadsheet, Filter, X } from 'lucide-react'
-import { MOCK_RECEIPTS, MOCK_USERS } from '../../data/mockData'
+import { adminApi } from '../../api/adminApi'
+import { receiptApi } from '../../api/receiptApi'
 import { RECEIPT_CATEGORIES } from '../../types/index'
-import type { ReceiptCategory } from '../../types/index'
+import type { Receipt, User, ReceiptCategory } from '../../types/index'
 import Page from '../../components/layout/Page'
 import StatusBadge from '../../components/ui/StatusBadge'
+import { TableSkeleton } from '../../components/ui/Skeleton'
 import { useToast } from '../../components/ui/Toast'
 import { formatCurrency, formatDate } from '../../lib/utils'
 
 export default function ApprovedReceiptsPage() {
-  const { success } = useToast()
+  const { success, error: toastError } = useToast()
+
+  const [receipts, setReceipts] = useState<Receipt[]>([])
+  const [loading, setLoading] = useState(true)
 
   const [userId, setUserId] = useState('ALL')
   const [category, setCategory] = useState<ReceiptCategory | 'ALL'>('ALL')
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
 
+  useEffect(() => {
+    let isMounted = true
+    adminApi
+      .list({ status: 'APPROVED' })
+      .then((res) => {
+        if (isMounted) {
+          setReceipts(res.data)
+          setLoading(false)
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load approved receipts:', err)
+        if (isMounted) setLoading(false)
+      })
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  // Extract unique users
+  const availableUsers = useMemo(() => {
+    const map = new Map<string, User>()
+    for (const r of receipts) {
+      if (r.user && !map.has(r.user.id)) {
+        map.set(r.user.id, r.user)
+      }
+    }
+    return Array.from(map.values())
+  }, [receipts])
+
   const filtered = useMemo(() => {
-    let rows = MOCK_RECEIPTS.filter((r) => r.status === 'APPROVED')
+    let rows = receipts.filter((r) => r.status === 'APPROVED')
     if (userId !== 'ALL') rows = rows.filter((r) => r.user.id === userId)
     if (category !== 'ALL') rows = rows.filter((r) => r.category === category)
     if (fromDate) rows = rows.filter((r) => r.receiptDate >= fromDate)
     if (toDate) rows = rows.filter((r) => r.receiptDate <= toDate)
     rows.sort((a, b) => b.submittedAt.localeCompare(a.submittedAt))
     return rows
-  }, [userId, category, fromDate, toDate])
+  }, [receipts, userId, category, fromDate, toDate])
 
   const totalApproved = filtered.reduce((sum, r) => sum + r.amount, 0)
   const hasFilters = userId !== 'ALL' || category !== 'ALL' || fromDate || toDate
@@ -36,11 +71,13 @@ export default function ApprovedReceiptsPage() {
     setToDate('')
   }
 
-  function handleExport(format: 'csv' | 'excel') {
-    // TODO: call receiptApi.export(format) and trigger browser download once backend is ready
-    success(
-      `${format.toUpperCase()} export started. The file will download shortly once the backend is connected.`
-    )
+  async function handleExport(format: 'csv' | 'excel') {
+    try {
+      await receiptApi.export(format)
+      success(`${format.toUpperCase()} export downloaded successfully.`)
+    } catch (err) {
+      toastError(`Failed to download ${format.toUpperCase()} export. Please try again.`)
+    }
   }
 
   const inputClass =
@@ -55,10 +92,10 @@ export default function ApprovedReceiptsPage() {
       <div className="flex flex-wrap items-center justify-between gap-4 mb-5 p-5 bg-surface border border-border rounded-xl">
         <div>
           <p className="text-sm font-semibold text-ink">
-            {filtered.length} approved {filtered.length === 1 ? 'receipt' : 'receipts'}
+            {loading ? '…' : `${filtered.length} approved ${filtered.length === 1 ? 'receipt' : 'receipts'}`}
           </p>
           <p className="text-2xl font-display font-bold text-ink mt-0.5">
-            {formatCurrency(totalApproved)}
+            {loading ? '…' : formatCurrency(totalApproved)}
             <span className="text-base font-normal text-ink-muted ml-2">total approved</span>
           </p>
         </div>
@@ -90,7 +127,7 @@ export default function ApprovedReceiptsPage() {
           aria-label="Filter by user"
         >
           <option value="ALL">All users</option>
-          {MOCK_USERS.filter((u) => u.role === 'USER').map((u) => (
+          {availableUsers.map((u) => (
             <option key={u.id} value={u.id}>{u.fullName}</option>
           ))}
         </select>
@@ -169,39 +206,43 @@ export default function ApprovedReceiptsPage() {
                 ))}
               </tr>
             </thead>
-            <tbody>
-              {filtered.map((r) => (
-                <tr
-                  key={r.id}
-                  className="border-b border-border-subtle last:border-0 hover:bg-canvas/60 transition-colors"
-                >
-                  <td className="pl-6 pr-4 py-3.5">
-                    <span className="text-xs font-semibold text-ink-muted font-mono">{r.id}</span>
-                  </td>
-                  <td className="px-4 py-3.5 text-ink-secondary">{r.user.fullName}</td>
-                  <td className="px-4 py-3.5">
-                    <p className="font-semibold text-ink truncate max-w-[160px]">{r.title}</p>
-                  </td>
-                  <td className="px-4 py-3.5 text-ink-secondary">{r.category}</td>
-                  <td className="px-4 py-3.5 text-ink-secondary whitespace-nowrap">
-                    {formatDate(r.receiptDate)}
-                  </td>
-                  <td className="px-4 py-3.5 text-ink-secondary whitespace-nowrap">
-                    {r.reviewedAt ? formatDate(r.reviewedAt) : '—'}
-                  </td>
-                  <td className="px-4 py-3.5 text-right font-semibold text-ink whitespace-nowrap">
-                    {formatCurrency(r.amount)}
-                  </td>
-                  <td className="px-4 py-3.5">
-                    <StatusBadge status={r.status} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
+            {loading ? (
+              <TableSkeleton />
+            ) : (
+              <tbody>
+                {filtered.map((r) => (
+                  <tr
+                    key={r.id}
+                    className="border-b border-border-subtle last:border-0 hover:bg-canvas/60 transition-colors"
+                  >
+                    <td className="pl-6 pr-4 py-3.5">
+                      <span className="text-xs font-semibold text-ink-muted font-mono">{r.id}</span>
+                    </td>
+                    <td className="px-4 py-3.5 text-ink-secondary">{r.user.fullName}</td>
+                    <td className="px-4 py-3.5">
+                      <p className="font-semibold text-ink truncate max-w-[160px]">{r.title}</p>
+                    </td>
+                    <td className="px-4 py-3.5 text-ink-secondary">{r.category}</td>
+                    <td className="px-4 py-3.5 text-ink-secondary whitespace-nowrap">
+                      {formatDate(r.receiptDate)}
+                    </td>
+                    <td className="px-4 py-3.5 text-ink-secondary whitespace-nowrap">
+                      {r.reviewedAt ? formatDate(r.reviewedAt) : '—'}
+                    </td>
+                    <td className="px-4 py-3.5 text-right font-semibold text-ink whitespace-nowrap">
+                      {formatCurrency(r.amount)}
+                    </td>
+                    <td className="px-4 py-3.5">
+                      <StatusBadge status={r.status} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            )}
           </table>
         </div>
 
-        {filtered.length === 0 && (
+        {!loading && filtered.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 text-center px-4">
             <FileSpreadsheet className="size-10 text-border mb-3" aria-hidden />
             <h3 className="font-semibold text-ink mb-1">No approved receipts</h3>

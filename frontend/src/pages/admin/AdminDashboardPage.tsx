@@ -1,8 +1,11 @@
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Clock, CheckCircle2, XCircle, InboxIcon } from 'lucide-react'
-import { MOCK_RECEIPTS } from '../../data/mockData'
+import { adminApi } from '../../api/adminApi'
+import type { Receipt } from '../../types/index'
 import Page from '../../components/layout/Page'
 import StatusBadge from '../../components/ui/StatusBadge'
+import { TableSkeleton } from '../../components/ui/Skeleton'
 import { formatCurrency, formatDate } from '../../lib/utils'
 
 function MetricCard({
@@ -32,7 +35,28 @@ function MetricCard({
 }
 
 export default function AdminDashboardPage() {
-  const all = MOCK_RECEIPTS
+  const [all, setAll] = useState<Receipt[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let isMounted = true
+    adminApi
+      .list()
+      .then((res) => {
+        if (isMounted) {
+          setAll(res.data)
+          setLoading(false)
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load admin receipts:', err)
+        if (isMounted) setLoading(false)
+      })
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
   const pending = all.filter((r) => r.status === 'PENDING')
   const approved = all.filter((r) => r.status === 'APPROVED')
   const rejected = all.filter((r) => r.status === 'REJECTED')
@@ -45,26 +69,26 @@ export default function AdminDashboardPage() {
     >
       {/* Metric cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-7">
-        <MetricCard label="Total submissions" value={String(all.length)} />
+        <MetricCard label="Total submissions" value={loading ? '…' : String(all.length)} />
         <MetricCard
           label="Pending review"
-          value={String(pending.length)}
+          value={loading ? '…' : String(pending.length)}
           icon={Clock}
           iconClass="bg-pending-surface text-pending"
         />
         <MetricCard
           label="Approved"
-          value={String(approved.length)}
+          value={loading ? '…' : String(approved.length)}
           icon={CheckCircle2}
           iconClass="bg-approved-surface text-approved"
         />
         <MetricCard
           label="Rejected"
-          value={String(rejected.length)}
+          value={loading ? '…' : String(rejected.length)}
           icon={XCircle}
           iconClass="bg-rejected-surface text-rejected"
         />
-        <MetricCard label="Approved value" value={formatCurrency(approvedValue)} />
+        <MetricCard label="Approved value" value={loading ? '…' : formatCurrency(approvedValue)} />
       </div>
 
       {/* Pending receipts panel */}
@@ -87,7 +111,11 @@ export default function AdminDashboardPage() {
           </Link>
         </div>
 
-        {pending.length === 0 ? (
+        {loading ? (
+          <div className="p-6">
+            <TableSkeleton rows={4} />
+          </div>
+        ) : pending.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center px-4">
             <InboxIcon className="size-10 text-border mb-3" aria-hidden />
             <h3 className="font-semibold text-ink mb-1">You're all caught up</h3>
