@@ -18,14 +18,25 @@ const dateTimeFormatter = new Intl.DateTimeFormat('en-AU', {
   timeStyle: 'short',
 })
 
-/** Format an ISO date string or datetime string as a readable date. */
-export function formatDate(value: string): string {
-  return dateFormatter.format(new Date(value))
+/** Helper to parse ISO strings ensuring UTC awareness */
+function parseSafeDate(value: string): Date {
+  if (!value) return new Date()
+  let str = value.trim()
+  // If it's an ISO datetime missing 'Z' or offset, append 'Z' to treat as UTC
+  if (str.includes('T') && !str.endsWith('Z') && !str.includes('+') && !str.match(/-\d{2}:\d{2}$/)) {
+    str = str + 'Z'
+  }
+  return new Date(str)
 }
 
-/** Format an ISO datetime string with time. */
+/** Format an ISO date string or datetime string as a readable date. */
+export function formatDate(value: string): string {
+  return dateFormatter.format(parseSafeDate(value))
+}
+
+/** Format an ISO datetime string with local time. */
 export function formatDateTime(value: string): string {
-  return dateTimeFormatter.format(new Date(value))
+  return dateTimeFormatter.format(parseSafeDate(value))
 }
 
 // ─── Greeting ────────────────────────────────────────────────────────────

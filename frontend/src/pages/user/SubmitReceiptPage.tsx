@@ -139,6 +139,7 @@ export default function SubmitReceiptPage() {
                 <input
                   type="date"
                   required
+                  max={new Date().toISOString().split('T')[0]}
                   value={receiptDate}
                   onChange={(e) => setReceiptDate(e.target.value)}
                   disabled={loading}

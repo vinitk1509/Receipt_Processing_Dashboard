@@ -40,20 +40,33 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     let isMounted = true
-    adminApi
-      .list()
-      .then((res) => {
-        if (isMounted) {
-          setAll(res.data)
-          setLoading(false)
-        }
-      })
-      .catch((err) => {
-        console.error('Failed to load admin receipts:', err)
-        if (isMounted) setLoading(false)
-      })
+
+    function loadData() {
+      adminApi
+        .list()
+        .then((res) => {
+          if (isMounted) {
+            setAll(res.data)
+            setLoading(false)
+          }
+        })
+        .catch((err) => {
+          console.error('Failed to load admin receipts:', err)
+          if (isMounted) setLoading(false)
+        })
+    }
+
+    loadData()
+
+    // Auto-reload on WebSocket real-time submission/review events
+    const handleUpdate = () => {
+      loadData()
+    }
+    window.addEventListener('receipt-status-updated', handleUpdate)
+
     return () => {
       isMounted = false
+      window.removeEventListener('receipt-status-updated', handleUpdate)
     }
   }, [])
 

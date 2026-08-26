@@ -1,6 +1,7 @@
 import os
 import re
 import uuid
+from datetime import datetime, timezone
 from decimal import Decimal
 from pathlib import Path
 from typing import List, Optional
@@ -108,6 +109,14 @@ class ReceiptService:
         except Exception:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Amount must be a positive number greater than 0.")
 
+        # Future date validation
+        today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        if receipt_date > today_str:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Receipt date cannot be in the future (today is {today_str})."
+            )
+
         try:
             cat_enum = ReceiptCategory(category_val)
         except ValueError:
@@ -136,6 +145,26 @@ class ReceiptService:
         db.add(receipt)
         db.commit()
         db.refresh(receipt)
+
+        # Real-time WebSocket notification to all active Admins
+        try:
+            from app.core.notifications import notification_manager
+            notification_manager.broadcast_all_sync({
+                "type": "RECEIPT_CREATED",
+                "receiptId": receipt.id,
+                "title": receipt.title,
+                "amount": float(receipt.amount),
+                "category": receipt.category.value,
+                "user": {
+                    "id": current_user.id,
+                    "fullName": current_user.full_name,
+                    "email": current_user.email,
+                },
+                "message": f"New receipt submitted by {current_user.full_name}: '{receipt.title}' (${float(receipt.amount):.2f} AUD)"
+            })
+        except Exception:
+            pass
+
         return receipt
 
     @staticmethod
@@ -178,6 +207,14 @@ class ReceiptService:
     @staticmethod
     def to_receipt_response(receipt: Receipt) -> ReceiptResponse:
         """Helper to convert ORM model to API response schema."""
+        submitted_at = receipt.submitted_at
+        if submitted_at and submitted_at.tzinfo is None:
+            submitted_at = submitted_at.replace(tzinfo=timezone.utc)
+
+        reviewed_at = receipt.reviewed_at
+        if reviewed_at and reviewed_at.tzinfo is None:
+            reviewed_at = reviewed_at.replace(tzinfo=timezone.utc)
+
         return ReceiptResponse(
             id=receipt.id,
             title=receipt.title,
@@ -190,8 +227,8 @@ class ReceiptService:
             file_size=receipt.file_size or 0,
             status=receipt.status,
             review_comment=receipt.review_comment,
-            submitted_at=receipt.submitted_at,
-            reviewed_at=receipt.reviewed_at,
+            submitted_at=submitted_at,
+            reviewed_at=reviewed_at,
             user=UserResponse.model_validate(receipt.user),
             reviewed_by=UserResponse.model_validate(receipt.reviewed_by_user) if receipt.reviewed_by_user else None,
         )

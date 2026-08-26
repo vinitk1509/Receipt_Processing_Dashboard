@@ -112,7 +112,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
             <div className="size-8 rounded-full bg-primary-subtle flex items-center justify-center shrink-0">
               <span className="text-xs font-bold text-primary">{user.initials}</span>
             </div>
-            <ChevronDown className="size-3.5 text-ink-muted hidden sm:block" aria-hidden />
+            {/* <ChevronDown className="size-3.5 text-ink-muted hidden sm:block" aria-hidden /> */}
           </div>
         )}
       </div>

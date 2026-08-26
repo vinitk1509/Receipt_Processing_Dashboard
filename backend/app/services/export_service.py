@@ -8,6 +8,7 @@ from openpyxl.utils import get_column_letter
 from sqlalchemy.orm import Session, joinedload
 
 from app.models.receipt import Receipt
+from app.models.user import User
 from app.models.enums import ReceiptStatus, ReceiptCategory
 
 

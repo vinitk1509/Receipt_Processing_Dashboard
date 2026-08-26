@@ -46,7 +46,19 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         ws.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data)
-            if (data.type === 'RECEIPT_STATUS_UPDATED') {
+
+            if (data.type === 'RECEIPT_CREATED') {
+              // Notify admin when a user submits a receipt
+              if (user?.role === 'ADMIN' && data.user?.id !== user?.id) {
+                success(
+                  `New Receipt: ${data.user?.fullName || 'A user'} submitted "${data.title}" ($${Number(data.amount || 0).toFixed(2)} AUD)`
+                )
+              }
+              // Dispatch window event for live table auto-refresh
+              window.dispatchEvent(
+                new CustomEvent('receipt-status-updated', { detail: data })
+              )
+            } else if (data.type === 'RECEIPT_STATUS_UPDATED') {
               const { title, status, reviewComment, receiptId } = data
               if (status === 'APPROVED') {
                 success(

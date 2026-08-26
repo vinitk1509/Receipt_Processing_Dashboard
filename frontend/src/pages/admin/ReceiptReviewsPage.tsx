@@ -33,20 +33,32 @@ export default function ReceiptReviewsPage() {
 
   useEffect(() => {
     let isMounted = true
-    adminApi
-      .list()
-      .then((res) => {
-        if (isMounted) {
-          setReceipts(res.data)
-          setLoading(false)
-        }
-      })
-      .catch((err) => {
-        console.error('Failed to load receipt reviews:', err)
-        if (isMounted) setLoading(false)
-      })
+
+    function loadData() {
+      adminApi
+        .list()
+        .then((res) => {
+          if (isMounted) {
+            setReceipts(res.data)
+            setLoading(false)
+          }
+        })
+        .catch((err) => {
+          console.error('Failed to load receipt reviews:', err)
+          if (isMounted) setLoading(false)
+        })
+    }
+
+    loadData()
+
+    const handleUpdate = () => {
+      loadData()
+    }
+    window.addEventListener('receipt-status-updated', handleUpdate)
+
     return () => {
       isMounted = false
+      window.removeEventListener('receipt-status-updated', handleUpdate)
     }
   }, [])
 

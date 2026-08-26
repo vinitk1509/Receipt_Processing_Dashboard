@@ -197,6 +197,14 @@ class AdminService:
     @staticmethod
     def to_receipt_response(receipt: Receipt) -> ReceiptResponse:
         """Helper to convert ORM model to API response schema."""
+        submitted_at = receipt.submitted_at
+        if submitted_at and submitted_at.tzinfo is None:
+            submitted_at = submitted_at.replace(tzinfo=timezone.utc)
+
+        reviewed_at = receipt.reviewed_at
+        if reviewed_at and reviewed_at.tzinfo is None:
+            reviewed_at = reviewed_at.replace(tzinfo=timezone.utc)
+
         return ReceiptResponse(
             id=receipt.id,
             title=receipt.title,
@@ -209,8 +217,8 @@ class AdminService:
             file_size=receipt.file_size or 0,
             status=receipt.status,
             review_comment=receipt.review_comment,
-            submitted_at=receipt.submitted_at,
-            reviewed_at=receipt.reviewed_at,
+            submitted_at=submitted_at,
+            reviewed_at=reviewed_at,
             user=UserResponse.model_validate(receipt.user),
             reviewed_by=UserResponse.model_validate(receipt.reviewed_by_user) if receipt.reviewed_by_user else None,
         )
