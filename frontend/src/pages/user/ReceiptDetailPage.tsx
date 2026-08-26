@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, Navigate } from 'react-router-dom'
-import { FileText, Download, ExternalLink, ChevronLeft } from 'lucide-react'
+import { ChevronLeft } from 'lucide-react'
 import { receiptApi } from '../../api/receiptApi'
-import { downloadFile } from '../../api/axios'
 import type { Receipt } from '../../types/index'
 import Page from '../../components/layout/Page'
 import StatusBadge from '../../components/ui/StatusBadge'
 import { TableSkeleton } from '../../components/ui/Skeleton'
+import DocumentPreviewCard from '../../components/ui/DocumentPreviewCard'
 import { formatCurrency, formatDate, formatDateTime } from '../../lib/utils'
 
 function Field({ label, value }: { label: string; value: string }) {
@@ -59,23 +59,6 @@ export default function ReceiptDetailPage() {
     )
   }
 
-  const isPdf = receipt.fileName?.toLowerCase().endsWith('.pdf')
-
-  const handleDownload = () => {
-    if (id) {
-      downloadFile(`/api/receipts/${id}/file`, receipt.fileName)
-    }
-  }
-
-  const handleViewDocument = () => {
-    if (id) {
-      const token = localStorage.getItem('clearclaim_token')
-      const fileUrl = `/api/receipts/${id}/file`
-      // Open in new tab with downloadFile or direct window preview
-      downloadFile(fileUrl, receipt.fileName)
-    }
-  }
-
   return (
     <Page
       title={receipt.title}
@@ -125,44 +108,16 @@ export default function ReceiptDetailPage() {
             </dl>
           </section>
 
-          {/* Attached document */}
+          {/* Attached document with in-app preview & modal */}
           <section className="bg-surface border border-border rounded-xl p-6">
             <h2 className="font-display text-base font-semibold text-ink mb-4">
               Attached Document
             </h2>
-
-            {/* Document preview placeholder */}
-            <div className="rounded-xl border border-border bg-canvas flex flex-col items-center justify-center py-14 mb-4 gap-3">
-              <div className="size-14 rounded-full bg-primary-subtle flex items-center justify-center">
-                <FileText className="size-7 text-primary" aria-hidden />
-              </div>
-              <div className="text-center">
-                <p className="font-semibold text-ink text-sm">{receipt.fileName}</p>
-                <p className="text-xs text-ink-muted mt-0.5">
-                  {isPdf ? 'PDF document' : 'Image file'}
-                  {receipt.fileSize
-                    ? ` · ${Math.round(receipt.fileSize / 1024)} KB`
-                    : ''}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <button
-                onClick={handleViewDocument}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border text-sm font-semibold text-ink-secondary hover:bg-canvas transition-colors"
-              >
-                <ExternalLink className="size-4" aria-hidden />
-                View document
-              </button>
-              <button
-                onClick={handleDownload}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border text-sm font-semibold text-ink-secondary hover:bg-canvas transition-colors"
-              >
-                <Download className="size-4" aria-hidden />
-                Download
-              </button>
-            </div>
+            <DocumentPreviewCard
+              receiptId={receipt.id}
+              fileName={receipt.fileName}
+              fileSize={receipt.fileSize}
+            />
           </section>
         </div>
 

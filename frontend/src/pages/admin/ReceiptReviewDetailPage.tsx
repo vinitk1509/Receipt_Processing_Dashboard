@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useParams, Navigate, Link } from 'react-router-dom'
-import { ChevronLeft, FileText, Download, ExternalLink, AlertCircle } from 'lucide-react'
+import { ChevronLeft, AlertCircle } from 'lucide-react'
 import { adminApi } from '../../api/adminApi'
-import { downloadFile } from '../../api/axios'
 import type { Receipt } from '../../types/index'
 import Page from '../../components/layout/Page'
 import StatusBadge from '../../components/ui/StatusBadge'
 import ConfirmDialog from '../../components/ui/ConfirmDialog'
 import { TableSkeleton } from '../../components/ui/Skeleton'
+import DocumentPreviewCard from '../../components/ui/DocumentPreviewCard'
 import { useToast } from '../../components/ui/Toast'
 import { formatCurrency, formatDate, formatDateTime } from '../../lib/utils'
 
@@ -71,7 +71,6 @@ export default function ReceiptReviewDetailPage() {
 
   const safeReceipt = receipt
   const isReviewed = receipt.status !== 'PENDING'
-  const isPdf = receipt.fileName?.toLowerCase().endsWith('.pdf')
 
   async function handleApprove() {
     setLoading(true)
@@ -104,12 +103,6 @@ export default function ReceiptReviewDetailPage() {
       toastError(msg)
     } finally {
       setLoading(false)
-    }
-  }
-
-  const handleDownload = () => {
-    if (id) {
-      downloadFile(`/api/receipts/${id}/file`, safeReceipt.fileName)
     }
   }
 
@@ -162,39 +155,16 @@ export default function ReceiptReviewDetailPage() {
               </dl>
             </section>
 
-            {/* Document preview */}
+            {/* Document preview with interactive thumbnail & in-app modal */}
             <section className="bg-surface border border-border rounded-xl p-6">
               <h2 className="font-display text-base font-semibold text-ink mb-4">
                 Attached Document
               </h2>
-              <div className="rounded-xl border border-border bg-canvas flex flex-col items-center justify-center py-14 mb-4 gap-3">
-                <div className="size-14 rounded-full bg-primary-subtle flex items-center justify-center">
-                  <FileText className="size-7 text-primary" aria-hidden />
-                </div>
-                <div className="text-center">
-                  <p className="font-semibold text-ink text-sm">{receipt.fileName}</p>
-                  <p className="text-xs text-ink-muted mt-0.5">
-                    {isPdf ? 'PDF document' : 'Image file'}
-                    {receipt.fileSize ? ` · ${Math.round(receipt.fileSize / 1024)} KB` : ''}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={handleDownload}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border text-sm font-semibold text-ink-secondary hover:bg-canvas transition-colors"
-                >
-                  <ExternalLink className="size-4" aria-hidden />
-                  Preview document
-                </button>
-                <button
-                  onClick={handleDownload}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border text-sm font-semibold text-ink-secondary hover:bg-canvas transition-colors"
-                >
-                  <Download className="size-4" aria-hidden />
-                  Download
-                </button>
-              </div>
+              <DocumentPreviewCard
+                receiptId={receipt.id}
+                fileName={receipt.fileName}
+                fileSize={receipt.fileSize}
+              />
             </section>
           </div>
 
@@ -276,8 +246,9 @@ export default function ReceiptReviewDetailPage() {
           safeReceipt.amount
         )} submitted by ${safeReceipt.user.fullName}. This action marks the expense as reimbursable.`}
         confirmLabel="Approve Receipt"
-        variant="approve"
+        confirmVariant="primary"
         loading={loading}
+        onCancel={() => setShowApproveDialog(false)}
       />
     </>
   )
