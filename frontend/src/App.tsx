@@ -44,9 +44,13 @@ function AppRoutes() {
         path="/dashboard"
         element={
           <ProtectedRoute>
-            <AppShell>
-              <DashboardPage />
-            </AppShell>
+            {user?.role === 'ADMIN' ? (
+              <Navigate to="/admin" replace />
+            ) : (
+              <AppShell>
+                <DashboardPage />
+              </AppShell>
+            )}
           </ProtectedRoute>
         }
       />

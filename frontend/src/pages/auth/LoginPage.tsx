@@ -28,9 +28,13 @@ export default function LoginPage() {
     setLoading(true)
     try {
       const loggedUser = await login(email.trim(), password)
+      const destination = location.state?.from?.pathname
       const target =
-        location.state?.from?.pathname ||
-        (loggedUser.role === 'ADMIN' ? '/admin' : '/dashboard')
+        destination && destination !== '/dashboard' && destination !== '/'
+          ? destination
+          : loggedUser.role === 'ADMIN'
+          ? '/admin'
+          : '/dashboard'
       navigate(target, { replace: true })
     } catch (err: any) {
       const detail = err?.response?.data?.detail
