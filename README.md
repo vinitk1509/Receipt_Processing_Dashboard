@@ -4,6 +4,8 @@ A full-stack web application for corporate expense submission, verification, and
 
 Configured for Australian expense workflows ($ AUD) and tailored for project management and consulting environments (e.g. Sequus Consulting).
 
+🎥 **Demo Video:** [https://youtu.be/390QNXYdQEE](https://youtu.be/390QNXYdQEE)
+
 ---
 
 ## Overview
@@ -42,12 +44,29 @@ Persistence: SQLite Database (`receipt_dashboard.db`) + Local Uploads / Docker V
 Ensure Docker Desktop is installed and running, then execute:
 
 ```bash
-docker compose up --build
+git clone https://github.com/vinitk1509/Receipt_Processing_Dashboard.git
+cd Receipt_Processing_Dashboard
+
+docker compose up --build -d
+
+docker compose exec backend python -m app.scripts.seed_demo
 ```
 
-- **Frontend App:** http://localhost:3000
-- **Backend API & Interactive Swagger Docs:** http://localhost:8000/docs
-- **ReDoc Documentation:** http://localhost:8000/redoc
+**Frontend:**
+http://localhost:3000
+
+**Swagger:**
+http://localhost:8000/docs
+
+#### Test Credentials
+
+**USER**  
+- Email: `user2@gmail.com`  
+- Password: `Password123`  
+
+**ADMIN**  
+- Email: `vinitkumar1@gmail.com`  
+- Password: `Password123`  
 
 To stop:
 ```bash
