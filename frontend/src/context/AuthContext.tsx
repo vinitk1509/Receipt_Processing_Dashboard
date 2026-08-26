@@ -69,18 +69,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   /**
    * Real Login API call
    */
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string): Promise<User> => {
     const res = await authApi.login({ email, password })
     const { access_token, user } = res.data
     saveToStorage(user, access_token)
     setState({ user, token: access_token })
+    return user
   }, [])
 
   /**
    * Real Registration API call
    */
   const register = useCallback(
-    async (fullName: string, email: string, password: string) => {
+    async (fullName: string, email: string, password: string): Promise<User> => {
       const res = await authApi.register({
         fullName,
         email,
@@ -90,6 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { access_token, user } = res.data
       saveToStorage(user, access_token)
       setState({ user, token: access_token })
+      return user
     },
     []
   )

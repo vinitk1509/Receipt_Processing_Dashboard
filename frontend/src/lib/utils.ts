@@ -1,10 +1,10 @@
-// ─── Currency formatting ──────────────────────────────────────────────────
+// ─── Currency formatting (Australian Dollars) ───────────────────────────────
 
-/** Format a number as Indian Rupees. Change this function to switch currency. */
+/** Format a number as Australian Dollars (AUD). */
 export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-IN', {
+  return new Intl.NumberFormat('en-AU', {
     style: 'currency',
-    currency: 'INR',
+    currency: 'AUD',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(amount)
@@ -12,8 +12,8 @@ export function formatCurrency(amount: number): string {
 
 // ─── Date formatting ──────────────────────────────────────────────────────
 
-const dateFormatter = new Intl.DateTimeFormat('en-IN', { dateStyle: 'medium' })
-const dateTimeFormatter = new Intl.DateTimeFormat('en-IN', {
+const dateFormatter = new Intl.DateTimeFormat('en-AU', { dateStyle: 'medium' })
+const dateTimeFormatter = new Intl.DateTimeFormat('en-AU', {
   dateStyle: 'medium',
   timeStyle: 'short',
 })

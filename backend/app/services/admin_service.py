@@ -9,6 +9,7 @@ from app.models.user import User
 from app.models.enums import ReceiptStatus, ReceiptCategory
 from app.schemas.receipt import ReceiptResponse
 from app.schemas.user import UserResponse
+from app.core.notifications import notification_manager
 
 
 class AdminService:
@@ -97,6 +98,7 @@ class AdminService:
         Approves a PENDING receipt.
         - Enforces state check: Only PENDING receipts can be reviewed.
         - Sets status to APPROVED, records reviewed_at and reviewed_by_id.
+        - Broadcasts real-time status update notification to the receipt owner.
         """
         receipt = AdminService.get_receipt_by_id(db, receipt_id)
         if not receipt:
@@ -118,6 +120,21 @@ class AdminService:
 
         db.commit()
         db.refresh(receipt)
+
+        # Dispatch real-time push notification
+        notification_manager.send_to_user_sync(
+            receipt.user_id,
+            {
+                "type": "RECEIPT_STATUS_UPDATED",
+                "receiptId": receipt.id,
+                "title": receipt.title,
+                "status": "APPROVED",
+                "reviewComment": receipt.review_comment,
+                "reviewedAt": receipt.reviewed_at.isoformat() if receipt.reviewed_at else None,
+                "reviewedBy": admin_user.full_name,
+            }
+        )
+
         return receipt
 
     @staticmethod
@@ -132,6 +149,7 @@ class AdminService:
         - Requires non-empty review_comment.
         - Enforces state check: Only PENDING receipts can be reviewed.
         - Sets status to REJECTED, records reviewed_at and reviewed_by_id.
+        - Broadcasts real-time status update notification to the receipt owner.
         """
         if not review_comment or not review_comment.strip():
             raise HTTPException(
@@ -159,6 +177,21 @@ class AdminService:
 
         db.commit()
         db.refresh(receipt)
+
+        # Dispatch real-time push notification
+        notification_manager.send_to_user_sync(
+            receipt.user_id,
+            {
+                "type": "RECEIPT_STATUS_UPDATED",
+                "receiptId": receipt.id,
+                "title": receipt.title,
+                "status": "REJECTED",
+                "reviewComment": receipt.review_comment,
+                "reviewedAt": receipt.reviewed_at.isoformat() if receipt.reviewed_at else None,
+                "reviewedBy": admin_user.full_name,
+            }
+        )
+
         return receipt
 
     @staticmethod

@@ -116,10 +116,10 @@ export default function SubmitReceiptPage() {
             {/* Amount + Date */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <label className={labelClass}>
-                Amount (₹)
+                Amount ($ AUD)
                 <div className="relative">
                   <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-ink-muted font-medium">
-                    ₹
+                    $
                   </span>
                   <input
                     type="number"

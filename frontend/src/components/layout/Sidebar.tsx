@@ -125,7 +125,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
         <div className="flex items-center gap-2 px-3 py-2 mt-1">
           <span className="size-2 rounded-full bg-accent shrink-0" aria-hidden />
           <span className="text-xs text-ink-muted">
-            {isAdmin ? 'Administrator account' : 'Finance team member'}
+            {isAdmin ? 'Administrator account' : 'User account'}
           </span>
         </div>
       </div>

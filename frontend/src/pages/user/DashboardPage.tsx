@@ -32,22 +32,28 @@ export default function DashboardPage() {
   const [myReceipts, setMyReceipts] = useState<Receipt[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    let isMounted = true
+  const loadDashboardData = () => {
     receiptApi
       .listMine()
       .then((res) => {
-        if (isMounted) {
-          setMyReceipts(res.data)
-          setLoading(false)
-        }
+        setMyReceipts(res.data)
+        setLoading(false)
       })
       .catch((err) => {
         console.error('Failed to fetch user receipts:', err)
-        if (isMounted) setLoading(false)
+        setLoading(false)
       })
+  }
+
+  useEffect(() => {
+    loadDashboardData()
+
+    const handleStatusUpdate = () => {
+      loadDashboardData()
+    }
+    window.addEventListener('receipt-status-updated', handleStatusUpdate)
     return () => {
-      isMounted = false
+      window.removeEventListener('receipt-status-updated', handleStatusUpdate)
     }
   }, [])
 

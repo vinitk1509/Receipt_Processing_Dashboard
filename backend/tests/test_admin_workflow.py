@@ -1,4 +1,5 @@
 import io
+import json
 import uuid
 import pytest
 from app.models.user import User
@@ -32,6 +33,7 @@ def test_admin_workflow_and_rbac(client, db_session):
     })
     assert u_res.status_code == 201
     user_token = u_res.json()["access_token"]
+    user_id = u_res.json()["user"]["id"]
 
     # Admin credentials via login
     a_res = client.post("/api/auth/login", json={
@@ -79,15 +81,28 @@ def test_admin_workflow_and_rbac(client, db_session):
     assert admin_list.status_code == 200
     assert any(r["id"] == receipt_id for r in admin_list.json())
 
-    # 5. Admin approves receipt
-    admin_approve = client.patch(
-        f"/api/admin/receipts/{receipt_id}/approve",
-        headers={"Authorization": f"Bearer {admin_token}"},
-        json={"reviewComment": "Approved. Fits policy."}
-    )
-    assert admin_approve.status_code == 200
-    assert admin_approve.json()["status"] == "APPROVED"
-    assert admin_approve.json()["reviewedBy"]["email"] == admin_email
+    # 5. Connect WebSocket client for user & test approve notification
+    with client.websocket_connect(f"/ws/notifications/{user_id}") as websocket:
+        websocket.send_text("ping")
+        resp = websocket.receive_text()
+        assert resp == "pong"
+
+        # Admin approves receipt
+        admin_approve = client.patch(
+            f"/api/admin/receipts/{receipt_id}/approve",
+            headers={"Authorization": f"Bearer {admin_token}"},
+            json={"reviewComment": "Approved. Fits policy."}
+        )
+        assert admin_approve.status_code == 200
+        assert admin_approve.json()["status"] == "APPROVED"
+        assert admin_approve.json()["reviewedBy"]["email"] == admin_email
+
+        # Receive WebSocket message
+        ws_msg = websocket.receive_text()
+        msg_json = json.loads(ws_msg)
+        assert msg_json["type"] == "RECEIPT_STATUS_UPDATED"
+        assert msg_json["status"] == "APPROVED"
+        assert msg_json["receiptId"] == receipt_id
 
     # 6. Cannot review already reviewed receipt (409 Conflict)
     double_review = client.patch(

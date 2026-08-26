@@ -48,10 +48,11 @@ def list_receipts(
 
 @router.get(
     "/export/csv",
-    summary="Export approved receipts as CSV",
-    description="Generates and streams a downloadable CSV file containing only APPROVED receipts."
+    summary="Export receipts as CSV",
+    description="Generates and streams a downloadable CSV file containing receipts filtered by status, user, category, and date."
 )
-def export_approved_csv(
+def export_csv(
+    status: Optional[str] = Query(None, description="Filter by status (APPROVED, REJECTED, PENDING, or ALL)"),
     userId: Optional[str] = Query(None, description="Filter by user ID"),
     category: Optional[str] = Query(None, description="Filter by category"),
     fromDate: Optional[str] = Query(None, description="Filter from receipt date"),
@@ -60,18 +61,20 @@ def export_approved_csv(
     db: Session = Depends(get_db),
 ):
     """
-    Export approved receipts to CSV.
+    Export receipts to CSV.
     Equivalent to Spring Boot CsvExportController.
     """
     csv_buffer = export_service.generate_csv(
         db=db,
+        status=status,
         user_id=userId,
         category=category,
         from_date=fromDate,
         to_date=toDate
     )
     today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    filename = f"approved_receipts_{today_str}.csv"
+    status_suffix = f"_{status.lower()}" if status and status.upper() != "ALL" else ""
+    filename = f"receipts{status_suffix}_{today_str}.csv"
 
     return Response(
         content=csv_buffer.getvalue(),
@@ -82,10 +85,11 @@ def export_approved_csv(
 
 @router.get(
     "/export/excel",
-    summary="Export approved receipts as Excel (.xlsx)",
-    description="Generates and streams a styled downloadable Excel file containing only APPROVED receipts."
+    summary="Export receipts as Excel (.xlsx)",
+    description="Generates and streams a styled downloadable Excel file containing receipts filtered by status, user, category, and date."
 )
-def export_approved_excel(
+def export_excel(
+    status: Optional[str] = Query(None, description="Filter by status (APPROVED, REJECTED, PENDING, or ALL)"),
     userId: Optional[str] = Query(None, description="Filter by user ID"),
     category: Optional[str] = Query(None, description="Filter by category"),
     fromDate: Optional[str] = Query(None, description="Filter from receipt date"),
@@ -94,18 +98,20 @@ def export_approved_excel(
     db: Session = Depends(get_db),
 ):
     """
-    Export approved receipts to Excel.
+    Export receipts to Excel.
     Equivalent to Spring Boot ExcelExportController.
     """
     excel_buffer = export_service.generate_excel(
         db=db,
+        status=status,
         user_id=userId,
         category=category,
         from_date=fromDate,
         to_date=toDate
     )
     today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    filename = f"approved_receipts_{today_str}.xlsx"
+    status_suffix = f"_{status.lower()}" if status and status.upper() != "ALL" else ""
+    filename = f"receipts{status_suffix}_{today_str}.xlsx"
 
     return StreamingResponse(
         excel_buffer,

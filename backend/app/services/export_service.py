@@ -13,25 +13,32 @@ from app.models.enums import ReceiptStatus, ReceiptCategory
 
 class ExportService:
     """
-    Service layer for exporting approved receipts in CSV and Excel formats.
+    Service layer for exporting receipts in CSV and Excel formats.
     Generates downloads in-memory without creating temporary files on disk.
     Equivalent to Spring Boot CsvExportService / ExcelExportService.
     """
 
     @staticmethod
-    def _query_approved_receipts(
+    def _query_receipts(
         db: Session,
+        status: Optional[str] = None,
         user_id: Optional[str] = None,
         category: Optional[str] = None,
         from_date: Optional[str] = None,
         to_date: Optional[str] = None,
     ) -> List[Receipt]:
-        """Fetch only APPROVED receipts with optional filters applied."""
+        """Fetch receipts with optional status, user, category, and date filters applied."""
         query = (
             db.query(Receipt)
             .options(joinedload(Receipt.user), joinedload(Receipt.reviewed_by_user))
-            .filter(Receipt.status == ReceiptStatus.APPROVED)
         )
+
+        if status and status.strip() and status.strip().upper() != "ALL":
+            try:
+                st_enum = ReceiptStatus(status.strip().upper())
+                query = query.filter(Receipt.status == st_enum)
+            except ValueError:
+                pass
 
         if user_id and user_id.strip() and user_id.strip().upper() != "ALL":
             query = query.filter(Receipt.user_id == user_id.strip())
@@ -53,15 +60,16 @@ class ExportService:
     @staticmethod
     def generate_csv(
         db: Session,
+        status: Optional[str] = None,
         user_id: Optional[str] = None,
         category: Optional[str] = None,
         from_date: Optional[str] = None,
         to_date: Optional[str] = None,
     ) -> io.StringIO:
         """
-        Generates an in-memory CSV stream of approved receipts.
+        Generates an in-memory CSV stream of receipts.
         """
-        receipts = ExportService._query_approved_receipts(db, user_id, category, from_date, to_date)
+        receipts = ExportService._query_receipts(db, status, user_id, category, from_date, to_date)
         output = io.StringIO()
         writer = csv.writer(output, quoting=csv.QUOTE_MINIMAL)
 
@@ -71,7 +79,7 @@ class ExportService:
             "Submitted By",
             "User Email",
             "Title",
-            "Amount (INR)",
+            "Amount (AUD)",
             "Receipt Date",
             "Category",
             "Notes",
@@ -84,6 +92,8 @@ class ExportService:
         ])
 
         for r in receipts:
+            sub_time_str = r.submitted_at.strftime("%Y-%m-%d %I:%M %p") if r.submitted_at else ""
+            rev_time_str = r.reviewed_at.strftime("%Y-%m-%d %I:%M %p") if r.reviewed_at else ""
             writer.writerow([
                 r.id,
                 r.user.full_name if r.user else "",
@@ -95,8 +105,8 @@ class ExportService:
                 r.notes or "",
                 r.original_file_name,
                 r.status.value if r.status else "",
-                r.submitted_at.strftime("%Y-%m-%d %H:%M:%S") if r.submitted_at else "",
-                r.reviewed_at.strftime("%Y-%m-%d %H:%M:%S") if r.reviewed_at else "",
+                sub_time_str,
+                rev_time_str,
                 r.reviewed_by_user.full_name if r.reviewed_by_user else "",
                 r.review_comment or "",
             ])
@@ -107,25 +117,26 @@ class ExportService:
     @staticmethod
     def generate_excel(
         db: Session,
+        status: Optional[str] = None,
         user_id: Optional[str] = None,
         category: Optional[str] = None,
         from_date: Optional[str] = None,
         to_date: Optional[str] = None,
     ) -> io.BytesIO:
         """
-        Generates an in-memory Excel (.xlsx) workbook of approved receipts with formatting.
+        Generates an in-memory Excel (.xlsx) workbook of receipts with formatting.
         """
-        receipts = ExportService._query_approved_receipts(db, user_id, category, from_date, to_date)
+        receipts = ExportService._query_receipts(db, status, user_id, category, from_date, to_date)
         wb = openpyxl.Workbook()
         ws = wb.active
-        ws.title = "Approved Receipts"
+        ws.title = "Receipts Export"
 
         headers = [
             "Receipt ID",
             "Submitted By",
             "User Email",
             "Title",
-            "Amount",
+            "Amount (AUD)",
             "Receipt Date",
             "Category",
             "Notes",
@@ -158,6 +169,8 @@ class ExportService:
         # Add data rows
         row_font = Font(name="Calibri", size=10)
         for r in receipts:
+            sub_time_str = r.submitted_at.strftime("%Y-%m-%d %I:%M %p") if r.submitted_at else ""
+            rev_time_str = r.reviewed_at.strftime("%Y-%m-%d %I:%M %p") if r.reviewed_at else ""
             ws.append([
                 r.id,
                 r.user.full_name if r.user else "",
@@ -169,8 +182,8 @@ class ExportService:
                 r.notes or "",
                 r.original_file_name,
                 r.status.value if r.status else "",
-                r.submitted_at.strftime("%Y-%m-%d %H:%M:%S") if r.submitted_at else "",
-                r.reviewed_at.strftime("%Y-%m-%d %H:%M:%S") if r.reviewed_at else "",
+                sub_time_str,
+                rev_time_str,
                 r.reviewed_by_user.full_name if r.reviewed_by_user else "",
                 r.review_comment or "",
             ])
@@ -182,7 +195,7 @@ class ExportService:
                 cell.border = thin_border
                 # Format amount column as currency/decimal
                 if cell.column == 5:
-                    cell.number_format = '#,##0.00'
+                    cell.number_format = '$#,##0.00'
                     cell.alignment = Alignment(horizontal="right")
 
         # Auto-adjust column width with a minimum width

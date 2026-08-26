@@ -32,22 +32,29 @@ export default function ReceiptsPage() {
   const [sortDir, setSortDir] = useState<'desc' | 'asc'>('desc')
   const [page, setPage] = useState(1)
 
-  useEffect(() => {
-    let isMounted = true
+  const loadReceipts = () => {
     receiptApi
       .listMine()
       .then((res) => {
-        if (isMounted) {
-          setReceipts(res.data)
-          setLoading(false)
-        }
+        setReceipts(res.data)
+        setLoading(false)
       })
       .catch((err) => {
         console.error('Failed to load receipts:', err)
-        if (isMounted) setLoading(false)
+        setLoading(false)
       })
+  }
+
+  useEffect(() => {
+    loadReceipts()
+
+    // Listen for live WebSocket updates
+    const handleStatusUpdate = () => {
+      loadReceipts()
+    }
+    window.addEventListener('receipt-status-updated', handleStatusUpdate)
     return () => {
-      isMounted = false
+      window.removeEventListener('receipt-status-updated', handleStatusUpdate)
     }
   }, [])
 

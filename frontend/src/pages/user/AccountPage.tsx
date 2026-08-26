@@ -52,7 +52,7 @@ export default function AccountPage() {
               <div>
                 <p className="text-xs text-ink-muted font-semibold uppercase tracking-wide">Role</p>
                 <p className="text-sm font-medium text-ink mt-0.5">
-                  {user.role === 'ADMIN' ? 'Administrator' : 'Finance team member'}
+                  {user.role === 'ADMIN' ? 'Administrator' : 'User'}
                 </p>
               </div>
             </div>

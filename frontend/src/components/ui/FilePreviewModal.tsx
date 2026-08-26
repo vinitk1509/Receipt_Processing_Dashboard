@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type WheelEvent } from 'react'
 import { X, ZoomIn, ZoomOut, RotateCcw, Download, FileText, Image as ImageIcon, Loader2, AlertCircle } from 'lucide-react'
 import { api, downloadFile } from '../../api/axios'
 
@@ -90,9 +90,18 @@ export default function FilePreviewModal({
     downloadFile(`/api/receipts/${receiptId}/file`, fileName)
   }
 
-  const handleZoomIn = () => setZoom((z) => Math.min(z + 0.25, 3))
+  const handleZoomIn = () => setZoom((z) => Math.min(z + 0.25, 4))
   const handleZoomOut = () => setZoom((z) => Math.max(z - 0.25, 0.5))
   const handleResetZoom = () => setZoom(1)
+
+  const handleWheelZoom = (e: WheelEvent) => {
+    if (!isImage) return
+    if (e.deltaY < 0) {
+      setZoom((z) => Math.min(z + 0.15, 4))
+    } else {
+      setZoom((z) => Math.max(z - 0.15, 0.5))
+    }
+  }
 
   return (
     <div
@@ -127,6 +136,7 @@ export default function FilePreviewModal({
               <p className="text-xs text-ink-muted flex items-center gap-2">
                 <span>{isPdf ? 'PDF Document' : 'Image File'}</span>
                 {fileSize ? <span>· {Math.round(fileSize / 1024)} KB</span> : null}
+                {isImage && <span className="hidden sm:inline text-ink-muted font-normal">· Scroll to zoom</span>}
               </p>
             </div>
           </div>
@@ -150,7 +160,7 @@ export default function FilePreviewModal({
                 <button
                   onClick={handleZoomIn}
                   title="Zoom In"
-                  disabled={zoom >= 3}
+                  disabled={zoom >= 4}
                   className="p-1.5 rounded hover:bg-canvas text-ink-secondary disabled:opacity-40 transition-colors"
                 >
                   <ZoomIn className="size-4" />
@@ -186,7 +196,10 @@ export default function FilePreviewModal({
         </div>
 
         {/* Content Viewer Body */}
-        <div className="flex-1 bg-canvas/30 overflow-auto flex items-center justify-center p-4 relative select-none">
+        <div
+          onWheel={handleWheelZoom}
+          className="flex-1 bg-canvas/30 overflow-auto flex items-center justify-center p-4 relative"
+        >
           {loading && (
             <div className="flex flex-col items-center gap-3 text-ink-muted py-20">
               <Loader2 className="size-8 animate-spin text-primary" />
@@ -218,12 +231,12 @@ export default function FilePreviewModal({
                   className="w-full h-full rounded-xl border border-border shadow-inner bg-white"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center overflow-auto p-2">
+                <div className="w-full h-full flex items-center justify-center overflow-auto p-4 cursor-grab active:cursor-grabbing">
                   <img
                     src={blobUrl}
                     alt={fileName}
                     style={{ transform: `scale(${zoom})`, transformOrigin: 'center center' }}
-                    className="max-h-[75vh] max-w-full object-contain rounded-lg shadow-md border border-border transition-transform duration-150"
+                    className="max-h-[75vh] max-w-full object-contain rounded-lg shadow-md border border-border transition-transform duration-100 select-none"
                   />
                 </div>
               )}

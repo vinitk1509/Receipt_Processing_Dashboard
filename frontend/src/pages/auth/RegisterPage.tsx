@@ -55,8 +55,15 @@ export default function RegisterPage() {
     try {
       await register(fullName.trim(), email.trim(), password)
       navigate('/dashboard', { replace: true })
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed. Please try again.')
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail
+      if (typeof detail === 'string') {
+        setError(detail)
+      } else if (Array.isArray(detail) && detail[0]?.msg) {
+        setError(detail[0].msg)
+      } else {
+        setError(err?.message || 'Registration failed. Please make sure the backend server is running on port 8000.')
+      }
     } finally {
       setLoading(false)
     }

@@ -2,7 +2,6 @@ import { useState, type FormEvent } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Eye, EyeOff, FileCheck2, AlertCircle } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
-import { DEMO_CREDENTIALS } from '../../data/mockData'
 
 export default function LoginPage() {
   const { login } = useAuth()
@@ -28,10 +27,20 @@ export default function LoginPage() {
 
     setLoading(true)
     try {
-      await login(email.trim(), password)
-      navigate(from, { replace: true })
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed. Please try again.')
+      const loggedUser = await login(email.trim(), password)
+      const target =
+        location.state?.from?.pathname ||
+        (loggedUser.role === 'ADMIN' ? '/admin' : '/dashboard')
+      navigate(target, { replace: true })
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail
+      if (typeof detail === 'string') {
+        setError(detail)
+      } else if (Array.isArray(detail) && detail[0]?.msg) {
+        setError(detail[0].msg)
+      } else {
+        setError(err?.message || 'Login failed. Please check your credentials and make sure the backend is running.')
+      }
     } finally {
       setLoading(false)
     }
@@ -58,7 +67,7 @@ export default function LoginPage() {
             </p>
             <h1 className="font-display text-2xl font-bold text-ink">Welcome back</h1>
             <p className="text-sm text-ink-secondary mt-1">
-              Sign in to manage your receipt workflow.
+              Sign in to manage and review expense receipts.
             </p>
           </div>
 
@@ -66,7 +75,7 @@ export default function LoginPage() {
             {/* Email */}
             <div className="flex flex-col gap-1.5">
               <label htmlFor="email" className="text-sm font-semibold text-ink-secondary">
-                Email address
+                Work email
               </label>
               <input
                 id="email"
@@ -78,22 +87,23 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}
                 className="px-3.5 py-2.5 rounded-lg border border-border bg-surface text-sm text-ink placeholder:text-ink-muted outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all disabled:opacity-60"
-                aria-describedby={error ? 'login-error' : undefined}
               />
             </div>
 
             {/* Password */}
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="password" className="text-sm font-semibold text-ink-secondary">
-                Password
-              </label>
+              <div className="flex items-center justify-between">
+                <label htmlFor="password" className="text-sm font-semibold text-ink-secondary">
+                  Password
+                </label>
+              </div>
               <div className="relative">
                 <input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
                   required
-                  placeholder="Your password"
+                  placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={loading}
@@ -158,31 +168,6 @@ export default function LoginPage() {
               Create an account
             </Link>
           </p>
-        </div>
-
-        {/* Demo credentials hint */}
-        <div className="mt-4 bg-surface border border-border rounded-xl p-4">
-          <p className="text-xs font-semibold text-ink-muted uppercase tracking-widest mb-3">
-            Demo credentials
-          </p>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => { setEmail(DEMO_CREDENTIALS.user.email); setPassword(DEMO_CREDENTIALS.user.password) }}
-              className="text-left p-3 rounded-lg border border-border-subtle hover:border-border hover:bg-canvas transition-colors"
-            >
-              <p className="text-xs font-semibold text-ink">User account</p>
-              <p className="text-xs text-ink-muted mt-0.5 truncate">{DEMO_CREDENTIALS.user.email}</p>
-            </button>
-            <button
-              type="button"
-              onClick={() => { setEmail(DEMO_CREDENTIALS.admin.email); setPassword(DEMO_CREDENTIALS.admin.password) }}
-              className="text-left p-3 rounded-lg border border-border-subtle hover:border-border hover:bg-canvas transition-colors"
-            >
-              <p className="text-xs font-semibold text-ink">Admin account</p>
-              <p className="text-xs text-ink-muted mt-0.5 truncate">{DEMO_CREDENTIALS.admin.email}</p>
-            </button>
-          </div>
         </div>
       </div>
     </div>
