@@ -25,7 +25,18 @@ export const receiptApi = {
     })
   },
 
-  /** Triggers a download of approved receipts in the specified format. */
-  export: (format: 'csv' | 'excel') =>
-    downloadFile(`/api/admin/receipts/export/${format}`),
+  /** Triggers a download of receipts in the specified format with optional filters. */
+  export: (format: 'csv' | 'excel', params?: Record<string, string>) => {
+    const searchParams = new URLSearchParams()
+    if (params) {
+      Object.entries(params).forEach(([key, val]) => {
+        if (val && val !== 'ALL') {
+          searchParams.append(key, val)
+        }
+      })
+    }
+    const queryStr = searchParams.toString()
+    const url = `/api/admin/receipts/export/${format}${queryStr ? `?${queryStr}` : ''}`
+    return downloadFile(url)
+  },
 }

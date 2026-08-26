@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+backend/.venv/
+.venv/
+
+# Build artifacts
+frontend/dist/
+dist/
+build/
+
+# Python cache & test artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environment configurations (keep .env.example)
+.env
+*.env.local
+
+# Database & local upload storage
+backend/receipt_dashboard.db
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# IDE & OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log

@@ -75,14 +75,14 @@ export default function LoginPage() {
             {/* Email */}
             <div className="flex flex-col gap-1.5">
               <label htmlFor="email" className="text-sm font-semibold text-ink-secondary">
-                Work email
+                Email address
               </label>
               <input
                 id="email"
                 type="email"
                 autoComplete="email"
                 required
-                placeholder="you@company.com"
+                placeholder="Enter your email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}

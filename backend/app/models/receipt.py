@@ -27,7 +27,7 @@ class Receipt(Base):
     title = Column(String(255), nullable=False)
     amount = Column(Numeric(10, 2), nullable=False)
     receipt_date = Column(String(10), nullable=False)  # YYYY-MM-DD
-    category = Column(SQLEnum(ReceiptCategory), nullable=False)
+    category = Column(SQLEnum(ReceiptCategory, values_callable=lambda x: [e.value for e in x]), nullable=False)
     notes = Column(Text, nullable=True, default="")
 
     original_file_name = Column(String(255), nullable=False)
@@ -36,7 +36,7 @@ class Receipt(Base):
     file_size = Column(Integer, nullable=True, default=0)
     content_type = Column(String(100), nullable=False)
 
-    status = Column(SQLEnum(ReceiptStatus), default=ReceiptStatus.PENDING, nullable=False, index=True)
+    status = Column(SQLEnum(ReceiptStatus, values_callable=lambda x: [e.value for e in x]), default=ReceiptStatus.PENDING, nullable=False, index=True)
     review_comment = Column(Text, nullable=True)
 
     submitted_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)

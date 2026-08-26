@@ -3,12 +3,19 @@ import { Download, FileSpreadsheet, Filter, X } from 'lucide-react'
 import { adminApi } from '../../api/adminApi'
 import { receiptApi } from '../../api/receiptApi'
 import { RECEIPT_CATEGORIES } from '../../types/index'
-import type { Receipt, User, ReceiptCategory } from '../../types/index'
+import type { Receipt, User, ReceiptStatus, ReceiptCategory } from '../../types/index'
 import Page from '../../components/layout/Page'
 import StatusBadge from '../../components/ui/StatusBadge'
 import { TableSkeleton } from '../../components/ui/Skeleton'
 import { useToast } from '../../components/ui/Toast'
 import { formatCurrency, formatDate } from '../../lib/utils'
+
+const STATUS_FILTER_OPTIONS: { value: ReceiptStatus | 'ALL'; label: string }[] = [
+  { value: 'ALL', label: 'All statuses' },
+  { value: 'APPROVED', label: 'Approved only' },
+  { value: 'PENDING', label: 'Pending only' },
+  { value: 'REJECTED', label: 'Rejected only' },
+]
 
 export default function ApprovedReceiptsPage() {
   const { success, error: toastError } = useToast()
@@ -16,6 +23,7 @@ export default function ApprovedReceiptsPage() {
   const [receipts, setReceipts] = useState<Receipt[]>([])
   const [loading, setLoading] = useState(true)
 
+  const [status, setStatus] = useState<ReceiptStatus | 'ALL'>('ALL')
   const [userId, setUserId] = useState('ALL')
   const [category, setCategory] = useState<ReceiptCategory | 'ALL'>('ALL')
   const [fromDate, setFromDate] = useState('')
@@ -24,7 +32,7 @@ export default function ApprovedReceiptsPage() {
   useEffect(() => {
     let isMounted = true
     adminApi
-      .list({ status: 'APPROVED' })
+      .list()
       .then((res) => {
         if (isMounted) {
           setReceipts(res.data)
@@ -32,7 +40,7 @@ export default function ApprovedReceiptsPage() {
         }
       })
       .catch((err) => {
-        console.error('Failed to load approved receipts:', err)
+        console.error('Failed to load receipts for export:', err)
         if (isMounted) setLoading(false)
       })
     return () => {
@@ -52,19 +60,21 @@ export default function ApprovedReceiptsPage() {
   }, [receipts])
 
   const filtered = useMemo(() => {
-    let rows = receipts.filter((r) => r.status === 'APPROVED')
+    let rows = [...receipts]
+    if (status !== 'ALL') rows = rows.filter((r) => r.status === status)
     if (userId !== 'ALL') rows = rows.filter((r) => r.user.id === userId)
     if (category !== 'ALL') rows = rows.filter((r) => r.category === category)
     if (fromDate) rows = rows.filter((r) => r.receiptDate >= fromDate)
     if (toDate) rows = rows.filter((r) => r.receiptDate <= toDate)
     rows.sort((a, b) => b.submittedAt.localeCompare(a.submittedAt))
     return rows
-  }, [receipts, userId, category, fromDate, toDate])
+  }, [receipts, status, userId, category, fromDate, toDate])
 
-  const totalApproved = filtered.reduce((sum, r) => sum + r.amount, 0)
-  const hasFilters = userId !== 'ALL' || category !== 'ALL' || fromDate || toDate
+  const totalAmount = filtered.reduce((sum, r) => sum + r.amount, 0)
+  const hasFilters = status !== 'ALL' || userId !== 'ALL' || category !== 'ALL' || fromDate || toDate
 
   function clearFilters() {
+    setStatus('ALL')
     setUserId('ALL')
     setCategory('ALL')
     setFromDate('')
@@ -73,7 +83,13 @@ export default function ApprovedReceiptsPage() {
 
   async function handleExport(format: 'csv' | 'excel') {
     try {
-      await receiptApi.export(format)
+      await receiptApi.export(format, {
+        status: status !== 'ALL' ? status : '',
+        userId: userId !== 'ALL' ? userId : '',
+        category: category !== 'ALL' ? category : '',
+        fromDate,
+        toDate,
+      })
       success(`${format.toUpperCase()} export downloaded successfully.`)
     } catch (err) {
       toastError(`Failed to download ${format.toUpperCase()} export. Please try again.`)
@@ -85,18 +101,18 @@ export default function ApprovedReceiptsPage() {
 
   return (
     <Page
-      title="Approved Receipts"
-      subtitle="View and export all approved expense receipts."
+      title="Export Receipts"
+      subtitle="View, filter, and export expense receipts across all statuses to CSV or Excel."
     >
       {/* Summary + export row */}
       <div className="flex flex-wrap items-center justify-between gap-4 mb-5 p-5 bg-surface border border-border rounded-xl">
         <div>
           <p className="text-sm font-semibold text-ink">
-            {loading ? '…' : `${filtered.length} approved ${filtered.length === 1 ? 'receipt' : 'receipts'}`}
+            {loading ? '…' : `${filtered.length} matching ${filtered.length === 1 ? 'receipt' : 'receipts'}`}
           </p>
           <p className="text-2xl font-display font-bold text-ink mt-0.5">
-            {loading ? '…' : formatCurrency(totalApproved)}
-            <span className="text-base font-normal text-ink-muted ml-2">total approved</span>
+            {loading ? '…' : formatCurrency(totalAmount)}
+            <span className="text-base font-normal text-ink-muted ml-2">filtered total (AUD)</span>
           </p>
         </div>
 
@@ -118,8 +134,21 @@ export default function ApprovedReceiptsPage() {
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Filters toolbar */}
       <div className="flex flex-wrap items-center gap-3 mb-4">
+        {/* Status filter */}
+        <select
+          value={status}
+          onChange={(e) => setStatus(e.target.value as typeof status)}
+          className={inputClass}
+          aria-label="Filter by status"
+        >
+          {STATUS_FILTER_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+
+        {/* User filter */}
         <select
           value={userId}
           onChange={(e) => setUserId(e.target.value)}
@@ -132,6 +161,7 @@ export default function ApprovedReceiptsPage() {
           ))}
         </select>
 
+        {/* Category filter */}
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value as typeof category)}
@@ -144,20 +174,22 @@ export default function ApprovedReceiptsPage() {
           ))}
         </select>
 
-        <div className="flex items-center gap-2">
+        {/* Date range with visible From and To labels */}
+        <div className="flex items-center gap-1.5 bg-surface border border-border rounded-lg px-2.5 py-1 text-xs text-ink-secondary">
+          <span className="font-medium text-ink-muted">From:</span>
           <input
             type="date"
             value={fromDate}
             onChange={(e) => setFromDate(e.target.value)}
-            className={inputClass}
+            className="bg-transparent text-xs text-ink outline-none py-1"
             aria-label="From date"
           />
-          <span className="text-ink-muted text-sm">–</span>
+          <span className="text-ink-muted px-1">To:</span>
           <input
             type="date"
             value={toDate}
             onChange={(e) => setToDate(e.target.value)}
-            className={inputClass}
+            className="bg-transparent text-xs text-ink outline-none py-1"
             aria-label="To date"
           />
         </div>
@@ -176,10 +208,10 @@ export default function ApprovedReceiptsPage() {
       {/* Table */}
       <div className="bg-surface border border-border rounded-xl overflow-hidden">
         <div className="flex items-center justify-between px-6 py-3 border-b border-border-subtle bg-canvas/50">
-          <p className="text-xs text-ink-muted">{filtered.length} approved receipts</p>
+          <p className="text-xs text-ink-muted">{filtered.length} receipts in view</p>
           <div className="flex items-center gap-1 text-ink-muted">
             <Filter className="size-3.5" aria-hidden />
-            <span className="text-xs">{hasFilters ? 'Filtered' : 'All approved'}</span>
+            <span className="text-xs">{hasFilters ? 'Filtered' : 'All'}</span>
           </div>
         </div>
 
@@ -193,7 +225,7 @@ export default function ApprovedReceiptsPage() {
                   { label: 'Title', cls: '' },
                   { label: 'Category', cls: '' },
                   { label: 'Receipt date', cls: '' },
-                  { label: 'Approved on', cls: '' },
+                  { label: 'Reviewed on', cls: '' },
                   { label: 'Amount', cls: 'text-right' },
                   { label: 'Status', cls: '' },
                 ].map(({ label, cls }) => (
@@ -245,11 +277,11 @@ export default function ApprovedReceiptsPage() {
         {!loading && filtered.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 text-center px-4">
             <FileSpreadsheet className="size-10 text-border mb-3" aria-hidden />
-            <h3 className="font-semibold text-ink mb-1">No approved receipts</h3>
+            <h3 className="font-semibold text-ink mb-1">No receipts found</h3>
             <p className="text-sm text-ink-muted">
               {hasFilters
-                ? 'No approved receipts match your current filters.'
-                : 'No receipts have been approved yet.'}
+                ? 'No receipts match your current filter selection.'
+                : 'No receipts have been submitted yet.'}
             </p>
             {hasFilters && (
               <button

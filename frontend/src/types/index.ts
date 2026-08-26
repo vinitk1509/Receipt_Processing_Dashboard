@@ -5,23 +5,23 @@ export type UserRole = 'USER' | 'ADMIN'
 export type ReceiptStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
 
 export type ReceiptCategory =
-  | 'Travel'
-  | 'Meals'
-  | 'Accommodation'
-  | 'Office Supplies'
-  | 'Transportation'
-  | 'Software'
-  | 'Client Expense'
+  | 'Travel & Site Visits'
+  | 'Client Meetings & Dining'
+  | 'Accommodation & Per Diem'
+  | 'Site & Safety Equipment'
+  | 'Software & Cloud Licenses'
+  | 'Office & Project Supplies'
+  | 'Professional Training & CPD'
   | 'Other'
 
 export const RECEIPT_CATEGORIES: ReceiptCategory[] = [
-  'Travel',
-  'Meals',
-  'Accommodation',
-  'Office Supplies',
-  'Transportation',
-  'Software',
-  'Client Expense',
+  'Travel & Site Visits',
+  'Client Meetings & Dining',
+  'Accommodation & Per Diem',
+  'Site & Safety Equipment',
+  'Software & Cloud Licenses',
+  'Office & Project Supplies',
+  'Professional Training & CPD',
   'Other',
 ]
 

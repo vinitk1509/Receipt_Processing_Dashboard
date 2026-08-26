@@ -160,20 +160,21 @@ export default function ReceiptsPage() {
         </select>
 
         {/* Date range */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 bg-surface border border-border rounded-lg px-2.5 py-1 text-xs text-ink-secondary">
+          <span className="font-medium text-ink-muted">From:</span>
           <input
             type="date"
             value={fromDate}
             onChange={(e) => handleFilterChange(() => setFromDate(e.target.value))}
-            className={inputClass}
+            className="bg-transparent text-xs text-ink outline-none py-1"
             aria-label="From date"
           />
-          <span className="text-ink-muted text-sm">–</span>
+          <span className="text-ink-muted px-1">To:</span>
           <input
             type="date"
             value={toDate}
             onChange={(e) => handleFilterChange(() => setToDate(e.target.value))}
-            className={inputClass}
+            className="bg-transparent text-xs text-ink outline-none py-1"
             aria-label="To date"
           />
         </div>

@@ -104,7 +104,7 @@ export default function RegisterPage() {
                 type="text"
                 autoComplete="name"
                 required
-                placeholder="Alex Morgan"
+                placeholder="Enter your full name"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 disabled={loading}
@@ -115,14 +115,14 @@ export default function RegisterPage() {
             {/* Email */}
             <div className="flex flex-col gap-1.5">
               <label htmlFor="email" className="text-sm font-semibold text-ink-secondary">
-                Work email
+                Email address
               </label>
               <input
                 id="email"
                 type="email"
                 autoComplete="email"
                 required
-                placeholder="you@company.com"
+                placeholder="Enter your email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}
@@ -141,7 +141,7 @@ export default function RegisterPage() {
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="new-password"
                   required
-                  placeholder="Create a strong password"
+                  placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={loading}
@@ -178,7 +178,7 @@ export default function RegisterPage() {
                   type={showConfirm ? 'text' : 'password'}
                   autoComplete="new-password"
                   required
-                  placeholder="Repeat your password"
+                  placeholder="Confirm your password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   disabled={loading}

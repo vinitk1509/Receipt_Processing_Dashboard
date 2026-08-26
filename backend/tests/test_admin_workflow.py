@@ -53,11 +53,11 @@ def test_admin_workflow_and_rbac(client, db_session):
         "/api/receipts",
         headers={"Authorization": f"Bearer {user_token}"},
         data={
-            "title": "Hotel Bangalore",
+            "title": "Hotel Brisbane Site Review",
             "amount": "8200.00",
             "receiptDate": "2026-08-20",
-            "category": "Accommodation",
-            "notes": "2 nights stay"
+            "category": "Accommodation & Per Diem",
+            "notes": "2 nights stay for project site review"
         },
         files={"file": ("hotel.pdf", file_bytes, "application/pdf")}
     )
@@ -76,7 +76,7 @@ def test_admin_workflow_and_rbac(client, db_session):
     admin_list = client.get(
         "/api/admin/receipts",
         headers={"Authorization": f"Bearer {admin_token}"},
-        params={"query": "Bangalore", "category": "Accommodation"}
+        params={"query": "Brisbane", "category": "Accommodation & Per Diem"}
     )
     assert admin_list.status_code == 200
     assert any(r["id"] == receipt_id for r in admin_list.json())

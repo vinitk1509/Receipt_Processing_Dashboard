@@ -13,11 +13,11 @@ class ReceiptStatus(str, enum.Enum):
 
 
 class ReceiptCategory(str, enum.Enum):
-    TRAVEL = "Travel"
-    MEALS = "Meals"
-    ACCOMMODATION = "Accommodation"
-    OFFICE_SUPPLIES = "Office Supplies"
-    TRANSPORTATION = "Transportation"
-    SOFTWARE = "Software"
-    CLIENT_EXPENSE = "Client Expense"
+    TRAVEL_SITE_VISITS = "Travel & Site Visits"
+    CLIENT_MEETINGS = "Client Meetings & Dining"
+    ACCOMMODATION = "Accommodation & Per Diem"
+    SITE_EQUIPMENT = "Site & Safety Equipment"
+    SOFTWARE_LICENSES = "Software & Cloud Licenses"
+    OFFICE_SUPPLIES = "Office & Project Supplies"
+    PROFESSIONAL_TRAINING = "Professional Training & CPD"
     OTHER = "Other"

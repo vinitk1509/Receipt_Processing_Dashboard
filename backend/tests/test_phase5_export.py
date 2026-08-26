@@ -35,7 +35,7 @@ def test_exports(client, db_session):
         title="Client Dinner Export Test",
         amount=4500.00,
         receipt_date="2026-08-24",
-        category=ReceiptCategory.MEALS,
+        category=ReceiptCategory.CLIENT_MEETINGS,
         notes="Export test notes",
         original_file_name="receipt.pdf",
         stored_file_name="stored_receipt.pdf",
@@ -75,6 +75,6 @@ def test_exports(client, db_session):
 
     # Verify excel workbook is valid
     wb = openpyxl.load_workbook(io.BytesIO(admin_excel.content))
-    assert 'Approved Receipts' in wb.sheetnames
+    assert 'Receipts Export' in wb.sheetnames
     ws = wb.active
     assert ws.max_row >= 2

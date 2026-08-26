@@ -36,7 +36,7 @@ def test_receipt_creation_and_cross_user_isolation(client):
             "title": "User 1 Client Dinner",
             "amount": "3450.75",
             "receiptDate": "2026-08-25",
-            "category": "Meals",
+            "category": "Client Meetings & Dining",
             "notes": "Business dinner"
         },
         files={"file": ("dinner.pdf", file_bytes, "application/pdf")}
