@@ -17,6 +17,44 @@ The platform provides a split-role interface for expense lifecycle management:
 
 ---
 
+## UI Preview
+
+<details open>
+<summary><b>👤 Submitter (User) Experience</b></summary>
+<br>
+
+| User Dashboard | Expense Claim Upload |
+| :---: | :---: |
+| ![User Dashboard](screenshots/user-dashboard.png) | ![Upload Receipt](screenshots/upload-receipt.png) |
+
+| Document Lightbox (Zoom & Pan) |
+| :---: |
+| ![Receipt Preview](screenshots/receipt-preview.png) |
+
+</details>
+
+<details>
+<summary><b>🛡️ Reviewer (Admin) Workflow</b></summary>
+<br>
+
+| Admin Audit & Filter Dashboard | Review & Audit Decision Modal |
+| :---: | :---: |
+| ![Admin Dashboard](screenshots/admin-dashboard.png) | ![Receipt Review](screenshots/receipt-review.png) |
+
+</details>
+
+<details>
+<summary><b>🔐 Authentication</b></summary>
+<br>
+
+| Sign In | Sign Up |
+| :---: | :---: |
+| ![Login](screenshots/login.png) | ![Sign Up](screenshots/sign-up.png) |
+
+</details>
+
+---
+
 ## Architecture & Tech Stack
 
 ```
