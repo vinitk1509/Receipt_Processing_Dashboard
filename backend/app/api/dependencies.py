@@ -15,7 +15,6 @@ security_scheme = HTTPBearer(auto_error=False)
 def get_db() -> Generator[Session, None, None]:
     """
     FastAPI dependency that yields a SQLAlchemy database session per request.
-    Equivalent to Spring Boot injecting EntityManager / Transactional context per request.
     """
     db = SessionLocal()
     try:
@@ -31,7 +30,6 @@ def get_current_user(
     """
     Extracts and validates JWT Bearer token from the Authorization header.
     Returns the authenticated User ORM entity.
-    Equivalent to Spring Security's AuthenticationPrincipal / SecurityContextHolder.getContext().getAuthentication()
     """
     if credentials is None:
         raise HTTPException(
@@ -73,7 +71,6 @@ def get_current_admin(
 ) -> User:
     """
     Enforces RBAC: Ensures current user has ADMIN role.
-    Equivalent to Spring Security's @PreAuthorize("hasRole('ADMIN')").
     """
     if current_user.role != UserRole.ADMIN:
         raise HTTPException(

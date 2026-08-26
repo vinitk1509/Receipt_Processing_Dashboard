@@ -6,20 +6,19 @@ from pwdlib.hashers.argon2 import Argon2Hasher
 
 from app.core.config import settings
 
-# Centralized password hashing using Argon2
-# Equivalent to Spring Boot's PasswordEncoder (e.g. Argon2PasswordEncoder)
+# Centralized password hashing using Argon2id
 password_hash = PasswordHash((
     Argon2Hasher(),
 ))
 
 
 def hash_password(password: str) -> str:
-    """Hash a plaintext password using Argon2."""
+    """Hash a plaintext password using Argon2id."""
     return password_hash.hash(password)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify a plaintext password against an Argon2 hash."""
+    """Verify a plaintext password against an Argon2id hash."""
     return password_hash.verify(plain_password, hashed_password)
 
 
@@ -27,7 +26,6 @@ def create_access_token(subject: str, role: str, expires_delta: Optional[timedel
     """
     Generate a signed JWT access token.
     Claims: sub (subject/user_id), role (USER/ADMIN), exp (expiration timestamp)
-    Equivalent to Spring Boot's JwtService.generateToken()
     """
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta

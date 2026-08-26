@@ -17,7 +17,6 @@ def generate_receipt_id() -> str:
 class Receipt(Base):
     """
     Receipt ORM Entity.
-    Equivalent to Spring Boot JPA @Entity @Table(name = "receipts")
     """
     __tablename__ = "receipts"
 

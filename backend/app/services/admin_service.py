@@ -14,8 +14,7 @@ from app.core.notifications import notification_manager
 
 class AdminService:
     """
-    Service layer for Administrator receipt review, searching, and filtering.
-    Equivalent to Spring Boot AdminReceiptService.
+    Service layer for administrative receipt management, reviews, and notifications.
     """
 
     @staticmethod

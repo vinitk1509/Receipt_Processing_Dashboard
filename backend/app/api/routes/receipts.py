@@ -31,7 +31,6 @@ def create_receipt(
 ):
     """
     Receipt creation endpoint with multipart upload.
-    Equivalent to Spring Boot @PostMapping(value = "/api/receipts", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     """
     receipt = receipt_service.create_receipt(
         db=db,
@@ -59,7 +58,6 @@ def get_my_receipts(
 ):
     """
     List user's own receipts.
-    Equivalent to Spring Boot @GetMapping("/api/receipts/me")
     """
     receipts = receipt_service.get_user_receipts(db, current_user.id)
     return [receipt_service.to_receipt_response(r) for r in receipts]
@@ -79,7 +77,6 @@ def get_receipt(
 ):
     """
     Get receipt by ID with ownership check.
-    Equivalent to Spring Boot @GetMapping("/api/receipts/{receipt_id}")
     """
     receipt = receipt_service.get_receipt_by_id(db, receipt_id)
     if not receipt:
@@ -105,7 +102,6 @@ def get_receipt_file(
 ):
     """
     Stream attached receipt document.
-    Equivalent to Spring Boot returning ResponseEntity<Resource> with Content-Disposition.
     """
     receipt = receipt_service.get_receipt_by_id(db, receipt_id)
     if not receipt:

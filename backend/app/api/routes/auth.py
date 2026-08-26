@@ -23,7 +23,6 @@ def register(
 ):
     """
     Public registration endpoint.
-    Equivalent to Spring Boot @PostMapping("/api/auth/register").
     """
     user, token = auth_service.register_user(db, payload)
     return AuthResponse(
@@ -46,7 +45,6 @@ def login(
 ):
     """
     Login endpoint for all roles.
-    Equivalent to Spring Boot @PostMapping("/api/auth/login").
     """
     user, token = auth_service.authenticate_user(db, payload)
     return AuthResponse(
@@ -68,6 +66,5 @@ def get_me(
 ):
     """
     Current user endpoint.
-    Equivalent to Spring Boot @GetMapping("/api/auth/me").
     """
     return UserResponse.model_validate(current_user)

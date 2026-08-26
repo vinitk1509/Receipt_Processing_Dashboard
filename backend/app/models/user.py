@@ -15,7 +15,6 @@ def generate_user_id() -> str:
 class User(Base):
     """
     User ORM Entity.
-    Equivalent to Spring Boot JPA @Entity @Table(name = "users")
     """
     __tablename__ = "users"
 

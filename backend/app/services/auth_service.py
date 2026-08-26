@@ -8,8 +8,7 @@ from app.core.security import hash_password, verify_password, create_access_toke
 
 class AuthService:
     """
-    Service layer for Authentication and User management.
-    Equivalent to Spring Boot's AuthService / UserService.
+    Service layer for user registration, authentication, and JWT generation.
     """
 
     @staticmethod

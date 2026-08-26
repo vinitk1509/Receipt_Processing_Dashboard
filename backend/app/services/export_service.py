@@ -16,7 +16,6 @@ class ExportService:
     """
     Service layer for exporting receipts in CSV and Excel formats.
     Generates downloads in-memory without creating temporary files on disk.
-    Equivalent to Spring Boot CsvExportService / ExcelExportService.
     """
 
     @staticmethod

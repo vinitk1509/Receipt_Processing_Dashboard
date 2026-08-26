@@ -23,7 +23,6 @@ ALLOWED_EXTENSIONS = {".pdf", ".jpg", ".jpeg", ".png"}
 class ReceiptService:
     """
     Service layer for Receipt management and secure document storage.
-    Equivalent to Spring Boot ReceiptService.
     """
 
     @staticmethod

@@ -32,7 +32,6 @@ def list_receipts(
 ):
     """
     Admin receipt query with multi-criteria filtering.
-    Equivalent to Spring Boot @GetMapping("/api/admin/receipts") with @PreAuthorize("hasRole('ADMIN')")
     """
     receipts = admin_service.list_all_receipts(
         db=db,
@@ -62,7 +61,6 @@ def export_csv(
 ):
     """
     Export receipts to CSV.
-    Equivalent to Spring Boot CsvExportController.
     """
     csv_buffer = export_service.generate_csv(
         db=db,
@@ -99,7 +97,6 @@ def export_excel(
 ):
     """
     Export receipts to Excel.
-    Equivalent to Spring Boot ExcelExportController.
     """
     excel_buffer = export_service.generate_excel(
         db=db,
@@ -134,7 +131,6 @@ def get_receipt(
 ):
     """
     Admin get receipt by ID.
-    Equivalent to Spring Boot @GetMapping("/api/admin/receipts/{receipt_id}")
     """
     receipt = admin_service.get_receipt_by_id(db, receipt_id)
     if not receipt:
@@ -160,7 +156,6 @@ def approve_receipt(
 ):
     """
     Approve receipt.
-    Equivalent to Spring Boot @PatchMapping("/api/admin/receipts/{receipt_id}/approve")
     """
     comment = payload.review_comment if payload else None
     receipt = admin_service.approve_receipt(
@@ -187,7 +182,6 @@ def reject_receipt(
 ):
     """
     Reject receipt.
-    Equivalent to Spring Boot @PatchMapping("/api/admin/receipts/{receipt_id}/reject")
     """
     receipt = admin_service.reject_receipt(
         db=db,

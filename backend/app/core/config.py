@@ -11,9 +11,7 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 class Settings(BaseSettings):
     """
-    Application Settings
-    Equivalent to Spring Boot's @ConfigurationProperties or application.yml
-    Reads from environment variables and .env file.
+    Application configuration settings loaded from environment variables and .env file.
     """
     DATABASE_URL: str = f"sqlite:///{BASE_DIR}/receipt_dashboard.db"
     SECRET_KEY: str = "change-this-to-a-super-secret-hex-key-in-production-1234567890"
