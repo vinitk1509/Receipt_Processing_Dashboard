@@ -1,114 +1,148 @@
-# 🧾 Clearclaim — Receipt Processing Dashboard
+# Receipt Processing Dashboard (Clearclaim)
 
-An enterprise-grade, full-stack **Receipt & Document Processing Platform** designed for corporate expense management, document verification, and accounting workflows in **Australian Dollars ($ AUD)**.
+A full-stack web application for corporate expense submission, verification, and audit workflows built with **FastAPI** and **React**.
 
-Built for **Sequus Consulting (Australia)** technical assessment.
-
----
-
-## 🌟 Key Features
-
-### 👤 User Capabilities (Submitter)
-- **Interactive Expense Submission:** Upload PDF, PNG, or JPEG receipts with automatic client-side & server-side validation (max 10MB, future-date block).
-- **Sequus-Tailored Expense Categories:** 8 specialized categories (*Travel & Site Visits*, *Site & Safety Equipment*, *Software & Cloud Licenses*, *Client Meetings & Dining*, *Accommodation & Per Diem*, etc.).
-- **Live Status Tracking:** Real-time visibility into whether claims are `PENDING`, `APPROVED`, or `REJECTED`.
-- **Instant In-App Document Lightbox:** Interactive modal featuring **mouse-wheel zoom (50%–400%)**, sandboxed PDF viewer, and pan navigation.
-- **⚡ Real-Time WebSocket Push Notifications:** Submitter receives immediate, live browser toast alerts the exact millisecond an administrator reviews their claim.
-
-### 🛡️ Administrator Capabilities (Reviewer)
-- **Organization-Wide Overview:** Live overview metrics, total approved expense volume ($ AUD), and active review queues.
-- **Multi-Dimensional Filter Workbench:** Filter submissions across Submitter, Status (`ALL`, `PENDING`, `APPROVED`, `REJECTED`), Date Range (`From:` / `To:`), and Expense Category.
-- **Live Submitter Alert & Zero-Reload Sync:** Admin dashboard and review queue automatically update in real time when any employee submits a receipt.
-- **Review & Audit Feedback:** One-click Approve / Reject with audit feedback comments.
-- **In-Memory Streaming Exports:** Generate and download formatted **CSV** and styled **Excel (`.xlsx`)** spreadsheets on-the-fly directly from memory.
+Configured for Australian expense workflows ($ AUD) and tailored for project management and consulting environments (e.g. Sequus Consulting).
 
 ---
 
-## 🏗️ Architecture & Technology Stack
+## Overview
+
+The platform provides a split-role interface for expense lifecycle management:
+
+- **Submitters (Users):** Upload receipts/invoices (PDF, PNG, JPEG), record metadata in AUD (date, amount, category, notes), preview uploaded documents in an in-app lightbox with zoom and pan, and receive instant status updates via WebSockets when claims are reviewed.
+- **Reviewers (Admins):** Review submissions company-wide, filter across submitters, categories, date ranges, and approval statuses (`PENDING`, `APPROVED`, `REJECTED`), inspect attached documents, approve or reject claims with audit feedback, and export formatted reports directly to **CSV** and styled **Excel (`.xlsx`)** spreadsheets.
+
+---
+
+## Architecture & Tech Stack
 
 ```
-   Browser Client (React 18 + TypeScript + TailwindCSS + Lucide)
-                       │
-       HTTP REST (Axios) / Native WebSockets
-                       │
-                       ▼
-   FastAPI Web Framework (Python 3.12 + ASGI + Uvicorn)
-   ├── Security & RBAC: Argon2id (pwdlib) + PyJWT (HS256) + Strict IDOR Isolation
-   ├── Data Access: SQLAlchemy 2.0 ORM (Parameterized Queries)
-   ├── In-Memory Export: openpyxl + csv (Zero-Disk RAM Streaming)
-   └── Real-Time Hub: In-Memory WebSocket ConnectionManager
-                       │
-                       ▼
-   Storage: SQLite Database (`receipt_dashboard.db`) + Local Uploads Volume
+Frontend (React 18 + TypeScript + Vite + Tailwind CSS)
+    │
+    ├── HTTP REST (Axios) -> Authentication, Receipts CRUD, Admin Reviews, File Streaming
+    └── Native WebSockets -> Instant real-time review & submission notifications
+    │
+Backend (FastAPI + Python 3.12 + SQLAlchemy 2.0 ORM)
+    │
+    ├── Security: Argon2id password hashing (pwdlib) + Signed JWT (HS256)
+    ├── Multi-tenancy: Strict IDOR resource ownership enforcement
+    ├── File Pipeline: Collision-safe UUID storage + MIME whitelist + Path traversal checks
+    └── Export Engine: In-memory openpyxl & csv streaming (Zero-disk RAM processing)
+    │
+Persistence: SQLite Database (`receipt_dashboard.db`) + Local Uploads / Docker Volume
 ```
 
 ---
 
-## 🚀 Quick Start Guide
+## Quick Start
 
-You can run the entire application using **Docker (1-command)** or **Local Development**.
+### 1. Run with Docker Compose (Recommended)
 
----
-
-### Option A: 🐳 Docker Compose (Recommended)
-
-Make sure [Docker Desktop](https://www.docker.com/products/docker-desktop/) is running, then run:
+Ensure Docker Desktop is installed and running, then execute:
 
 ```bash
 docker compose up --build
 ```
 
-- **Frontend App:** [http://localhost:3000](http://localhost:3000)
-- **Backend API & Swagger Docs:** [http://localhost:8000/docs](http://localhost:8000/docs)
+- **Frontend App:** http://localhost:3000
+- **Backend API & Interactive Swagger Docs:** http://localhost:8000/docs
+- **ReDoc Documentation:** http://localhost:8000/redoc
 
-To stop the containers:
+To stop:
 ```bash
 docker compose down
 ```
 
 ---
 
-### Option B: 💻 Local Manual Development
+### 2. Run Locally (Manual Development)
 
-#### 1. Start Backend (Terminal 1)
+#### Backend Setup
+
 ```bash
 cd backend
+
+# Create & activate virtual environment
 python -m venv .venv
-# Activate Virtual Environment:
-# On Windows (PowerShell):
+
+# On Windows:
 .venv\Scripts\Activate.ps1
-# On Linux/macOS:
+# On macOS/Linux:
 source .venv/bin/activate
 
+# Install dependencies
 pip install -r requirements.txt
+
+# Start FastAPI development server
 uvicorn app.main:app --reload --port 8000
 ```
-*Backend runs at [http://127.0.0.1:8000](http://127.0.0.1:8000)*
+Backend will be live at `http://127.0.0.1:8000`.
 
-#### 2. Start Frontend (Terminal 2)
+#### Frontend Setup
+
+In a separate terminal:
+
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-*Frontend runs at [http://localhost:5173](http://localhost:5173)*
+Frontend will be live at `http://localhost:5173`.
 
 ---
 
-## 🔑 Provisioning the Administrator Account
+## Admin Account Provisioning
 
 To create or promote an admin user, run the CLI utility:
 
 ```bash
-# In backend/ folder (with virtualenv active):
-python -m app.scripts.create_admin --email admin@sequus.com.au --password "AdminPassword123" --name "Sequus Admin"
+cd backend
+python -m app.scripts.create_admin --email vinitkumar1@gmail.com --password "YourAdminPassword123" --name "Vinit Kumar Arora"
 ```
 
 ---
 
-## 🧪 Automated Test Suite
+## REST API Reference
 
-The repository includes a 100% passing Pytest integration test suite covering authentication, multi-tenant IDOR isolation, admin workflows, WebSockets, and exports.
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| `POST` | `/api/auth/register` | Public | Create new user account and obtain JWT |
+| `POST` | `/api/auth/login` | Public | Authenticate user and obtain JWT |
+| `GET` | `/api/auth/me` | User / Admin | Get profile of currently authenticated user |
+| `GET` | `/api/receipts/me` | User / Admin | List receipts submitted by current user |
+| `POST` | `/api/receipts` | User / Admin | Submit new expense claim with document upload |
+| `GET` | `/api/receipts/{id}` | User / Admin | Get single receipt (enforces IDOR ownership) |
+| `GET` | `/api/receipts/{id}/file` | User / Admin | Stream/download attached receipt file |
+| `GET` | `/api/admin/receipts` | Admin only | List and filter all company receipts |
+| `GET` | `/api/admin/receipts/{id}` | Admin only | Get receipt review details |
+| `PATCH` | `/api/admin/receipts/{id}/approve` | Admin only | Approve receipt with optional comment |
+| `PATCH` | `/api/admin/receipts/{id}/reject` | Admin only | Reject receipt with mandatory comment |
+| `GET` | `/api/admin/receipts/export/csv` | Admin only | Export filtered receipts as CSV |
+| `GET` | `/api/admin/receipts/export/excel` | Admin only | Export filtered receipts as styled Excel (`.xlsx`) |
+| `WS` | `/ws/notifications/{user_id}` | Public | WebSocket channel for real-time push events |
+
+---
+
+## Security Implementation
+
+- **Password Hashing:** Uses **Argon2id** via `pwdlib[argon2]`, resistant to GPU-accelerated brute-force attacks.
+- **Stateless Authentication:** Cryptographically signed JSON Web Tokens (JWT) using `HS256`.
+- **Role-Based Access Control (RBAC):** Backend route guards (`Depends(get_current_admin)`) verify database role on every privileged endpoint.
+- **IDOR Protection:** Receipt queries strictly verify that `receipt.user_id == current_user.id` unless the requester is an Admin.
+- **File Upload Defenses:**
+  - File extension and MIME type whitelisting (`.pdf`, `.jpg`, `.jpeg`, `.png`).
+  - Max upload size enforcement (10 MB).
+  - Collision-proof UUID file naming on disk.
+  - Path traversal checks ensuring resolved destination stays within upload directory.
+- **SQL Injection Prevention:** 100% parameterized queries via SQLAlchemy 2.0 ORM.
+- **Future Date Prevention:** Date validation on both frontend and backend prevents entering future receipt dates.
+
+---
+
+## Testing
+
+The repository contains an automated Pytest test suite covering authentication, IDOR cross-tenant isolation, admin review lifecycles, and export formatting.
 
 ```bash
 cd backend
@@ -124,9 +158,15 @@ tests/test_receipts_isolation.py::test_receipt_creation_and_cross_user_isolation
 ======================== 4 passed in 1.60s =========================
 ```
 
+Frontend type-check and production build:
+
+```bash
+cd frontend
+npm run build
+```
+
 ---
 
-## 📚 Complete Learning & Interview Guide
+## License
 
-For a 65-part deep dive explaining every file, line of code, Spring Boot equivalent, security mechanism, and interview defense:
-👉 See **[`SEQUUS_PROJECT_COMPLETE_EXPLANATION.md`](./SEQUUS_PROJECT_COMPLETE_EXPLANATION.md)**.
+Created for the Sequus technical assessment.

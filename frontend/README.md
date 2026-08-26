@@ -1,114 +1,74 @@
-# Receipt Processing Dashboard
+# Frontend Client — Receipt Processing Dashboard
 
-A professional expense receipt submission and approval system for internal finance teams.
-
-Built by **Vinit** as part of a full-stack technical assessment project.
+React single-page application for the Receipt Processing Dashboard built with TypeScript, Vite, and Tailwind CSS.
 
 ---
 
-## Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Framework | React 18 + Vite |
-| Language | TypeScript |
-| Styling | Tailwind CSS v4 |
-| Routing | React Router v6 |
-| HTTP client | Axios |
-| Icons | Lucide React |
-
----
-
-## Project Structure
+## Directory Layout
 
 ```
-src/
-├── api/              # Axios instance + API service functions
-├── components/
-│   ├── layout/       # AppShell, Sidebar, Header, Page wrapper
-│   └── ui/           # StatusBadge, Toast, ConfirmDialog, Skeleton, Button
-├── context/          # AuthContext — authentication state
-├── data/             # Development mock data (replaced by API calls in production)
-├── lib/              # Utility functions (currency, date formatting)
-├── pages/
-│   ├── auth/         # Login, Register
-│   ├── user/         # Dashboard, My Receipts, Submit Receipt, Receipt Detail, Account
-│   └── admin/        # Admin Dashboard, Receipt Reviews, Review Detail, Approved Receipts
-├── routes/           # ProtectedRoute — auth & role guards
-└── types/            # TypeScript interfaces and enums
+frontend/
+├── src/
+│   ├── api/                  # Axios HTTP client instances & API endpoints
+│   ├── components/
+│   │   ├── layout/           # AppShell, Sidebar, Header, Page wrapper
+│   │   └── ui/               # StatusBadge, Toast, FilePreviewModal, ConfirmDialog
+│   ├── context/
+│   │   ├── AuthContext.tsx   # Authentication state & localStorage persistence
+│   │   └── NotificationContext.tsx # WebSocket listener & real-time toast dispatcher
+│   ├── lib/
+│   │   └── utils.ts          # Currency (AUD), date/time formatters, and class merge helper
+│   ├── pages/
+│   │   ├── auth/             # LoginPage, RegisterPage
+│   │   ├── user/             # DashboardPage, ReceiptsPage, SubmitReceiptPage, ReceiptDetailPage, AccountPage
+│   │   └── admin/            # AdminDashboardPage, ReceiptReviewsPage, ReceiptReviewDetailPage, ApprovedReceiptsPage
+│   ├── routes/
+│   │   └── ProtectedRoute.tsx# Role-based route guards
+│   ├── types/
+│   │   └── index.ts          # Domain interfaces & category enums
+│   ├── App.tsx               # Route mapping & fallback redirection
+│   ├── index.css             # Design tokens, typography & animations
+│   └── main.tsx              # React DOM mounting
+├── nginx.conf                # Production Nginx reverse-proxy configuration
+├── Dockerfile                # Multi-stage production build definition
+└── package.json              # NPM dependencies & scripts
 ```
 
 ---
 
 ## Getting Started
 
-```bash
-npm install
-npm run dev
-```
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-Open **http://localhost:5173**
+2. Start development server:
+   ```bash
+   npm run dev
+   ```
+
+3. Open your browser at `http://localhost:5173`.
 
 ---
 
-## Demo Accounts
+## Available Scripts
 
-| Role | Email | Password |
-|------|-------|----------|
-| User | `alex@example.com` | `password123` |
-| Admin | `admin@example.com` | `password123` |
-
-> Both accounts are for development demonstration only.
+| Command | Purpose |
+|---|---|
+| `npm run dev` | Start Vite development server with Hot Module Reloading |
+| `npm run build` | Compile TypeScript and bundle minified production assets in `dist/` |
+| `npm run preview` | Locally preview the production build |
+| `npm run lint` | Run ESLint across TypeScript and TSX source files |
 
 ---
 
 ## Environment Variables
 
-Copy `.env.example` to `.env` and set your API URL:
+Copy `.env.example` to `.env`:
 
 ```env
 VITE_API_BASE_URL=http://127.0.0.1:8000
 ```
 
----
-
-## Roles
-
-| Role | Capabilities |
-|------|-------------|
-| `USER` | Submit receipts, view own submissions, track review status |
-| `ADMIN` | View all receipts, approve/reject with comments, export reports |
-
----
-
-## Receipt Statuses
-
-| Status | Meaning |
-|--------|---------|
-| `PENDING` | Submitted, awaiting admin review |
-| `APPROVED` | Approved for reimbursement |
-| `REJECTED` | Rejected with admin comment |
-
----
-
-## Backend Integration
-
-The frontend is built ready to connect to a **Python FastAPI** backend.
-
-All API calls are centralized in `src/api/`:
-
-- `authApi.ts` — `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`
-- `receiptApi.ts` — `POST /api/receipts`, `GET /api/receipts/me`, `GET /api/receipts/:id`
-- `adminApi.ts` — `GET /api/admin/receipts`, `PATCH /api/admin/receipts/:id/approve|reject`
-
-To go live: remove `src/data/mockData.ts`, replace the mock bodies in `AuthContext.tsx` and page submit handlers with the real API calls already defined in `src/api/`.
-
----
-
-## Other Commands
-
-```bash
-npm run build       # Production build
-npm run preview     # Preview production build locally
-npm run type-check  # TypeScript check without building
-```
+> In Docker / production, `VITE_API_BASE_URL` is left empty so requests use relative `/api` and `/ws` paths routed through the Nginx reverse proxy.
